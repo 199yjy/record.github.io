@@ -1,5 +1,4 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0"><channel><title>yjieyan的私人博客</title><link>https://199yjy.github.io/record.github.io</link><description>记录</description><copyright>yjieyan的私人博客</copyright><docs>http://www.rssboard.org/rss-specification</docs><generator>python-feedgen</generator><image><url>https://avatars.githubusercontent.com/u/35625289?v=4</url><title>avatar</title><link>https://199yjy.github.io/record.github.io</link></image><lastBuildDate>Fri, 10 Oct 2025 15:02:57 +0000</lastBuildDate><managingEditor>yjieyan的私人博客</managingEditor><ttl>60</ttl><webMaster>yjieyan的私人博客</webMaster><item><title>【异步】手写Promise</title><link>https://199yjy.github.io/record.github.io/post/%E3%80%90-yi-bu-%E3%80%91-shou-xie-Promise.html</link><description># Promise
+# Promise
 
 Promise特点：
 - 执行了resolve，Promise状态会变成fulfilled
@@ -84,12 +83,12 @@ class MyPromise {
         // 接收两个回调 onFulfilled, onRejected
 
         // 参数校验，确保一定是函数
-        onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : val =&gt; val
-        onRejected = typeof onRejected === 'function' ? onRejected : reason =&gt; { throw reason }
+        onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : val => val
+        onRejected = typeof onRejected === 'function' ? onRejected : reason => { throw reason }
 
-        var thenPromise = new MyPromise((resolve, reject) =&gt; {
-            const resolvePromise = cb =&gt; {
-                setTimeout(() =&gt; {
+        var thenPromise = new MyPromise((resolve, reject) => {
+            const resolvePromise = cb => {
+                setTimeout(() => {
                     try {
                         const x = cb(this.PromiseResult)
                         if (x === thenPromise) {
@@ -142,12 +141,12 @@ class MyPromise {
 - 循环Promise数组，得到结果就resolve
 ```js
 static race(promiseArr) {
-    return new MyPromise((resolve, reject) =&gt; {
-        promiseArr.forEach(promise =&gt; {
+    return new MyPromise((resolve, reject) => {
+        promiseArr.forEach(promise => {
             if (promise instanceof MyPromise) {
-                promise.then(res =&gt; {
+                promise.then(res => {
                     resolve(res)
-                }, err =&gt; {
+                }, err => {
                     reject(err)
                 })
             } else {
@@ -172,10 +171,10 @@ allSettled会等待所有 Promise完成，并返回一个包含所有结果的�
 
 ```js
 static allSettled(promiseArr) {
-    return new Promise((resolve, reject) =&gt; {
+    return new Promise((resolve, reject) => {
         const result = []
         let count = 0
-        const addData = (status, value, i) =&gt; {
+        const addData = (status, value, i) => {
             result[i] = {
                 status,
                 value
@@ -185,11 +184,11 @@ static allSettled(promiseArr) {
                 resolve(result)
             }
         }
-        promiseArr.forEach((promise, i) =&gt; {
+        promiseArr.forEach((promise, i) => {
             if (promise instanceof MyPromise) {
-                promise.then(res =&gt; {
+                promise.then(res => {
                     addData('fulfilled', res, i)
-                }, err =&gt; {
+                }, err => {
                     addData('rejected', err, i)
                 })
             } else {
@@ -198,5 +197,4 @@ static allSettled(promiseArr) {
         })
     })
 }
-```。</description><guid isPermaLink="true">https://199yjy.github.io/record.github.io/post/%E3%80%90-yi-bu-%E3%80%91-shou-xie-Promise.html</guid><pubDate>Fri, 10 Oct 2025 15:02:32 +0000</pubDate></item><item><title>【异步】JS 实现带并发的异步任务调度器</title><link>https://199yjy.github.io/record.github.io/post/%E3%80%90-yi-bu-%E3%80%91JS%20-shi-xian-dai-bing-fa-de-yi-bu-ren-wu-diao-du-qi.html</link><description># 【异步】JS 实现带并发的异步任务调度器
-作用：控制异步任务的并发数量，避免因同时发起过多请求或任务导致服务器压力过大或系统资源耗尽，从而保证系统稳定性和性能。</description><guid isPermaLink="true">https://199yjy.github.io/record.github.io/post/%E3%80%90-yi-bu-%E3%80%91JS%20-shi-xian-dai-bing-fa-de-yi-bu-ren-wu-diao-du-qi.html</guid><pubDate>Fri, 03 Oct 2025 05:07:17 +0000</pubDate></item></channel></rss>
+```
