@@ -89,7 +89,7 @@ body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;
 <li>编译阶段</li>
 <li>输出阶段</li>
 </ol>
-<h3>初始化</h3>
+<h2>初始化阶段</h2>
 <p>在初始化阶段，webpack会将<code class="notranslate">cli参数</code>、<code class="notranslate">配置文件</code>、<code class="notranslate">默认配置</code>进行融合，形成一个最终的配置对象。<br>
 初始化阶段主要用于产生一个最终的配置，为编译阶段做必要的准备，产生完整的配置基础。</p>
 <ul>
@@ -121,46 +121,42 @@ body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;
 </ul>
 </li>
 </ul>
-<h3>编译</h3>
-<ul>
-<li>
-<p>创建 <code class="notranslate">chunk</code><br>
-<code class="notranslate">chunk</code> 是 webpack在内部构建过程中的一个概念，译为块，它表示通过入口模块找到的所有依赖模块的统称。<br>
+<h2>编译</h2>
+<h3>创建 <code class="notranslate">chunk</code></h3>
+<p><code class="notranslate">chunk</code> 是 webpack在内部构建过程中的一个概念，译为块，它表示通过入口模块找到的所有依赖模块的统称。<br>
 根据入口模块（默认为 ./src/index.js）创建一个 chunk，称为 main chunk。<br>
 每一个 chunk 是有名字的，有很多个入口文件，chunk 会有很多个，默认情况下有一个 chunk。<br>
-每个 chunk 都有至少两个属性：</p>
-<ul>
-<li>name：默认main</li>
-<li>id：唯一编号，开发环境和 name 相同，生产环境是一个数字，从 0 开始</li>
-</ul>
-</li>
-<li>
-<p>依赖分析</p>
-<ul>
+每个 chunk 都有至少两个属性：<br>
+- name：默认main<br>
+- id：唯一编号，开发环境和 name 相同，生产环境是一个数字，从 0 开始</p>
+<h3>依赖分析</h3>
+<ol>
 <li>
 <p>构建所有依赖模块</p>
 <ul>
 <li>确认入口模块</li>
 </ul>
-<div class="highlight highlight-source-js"><pre class="notranslate"> <span class="pl-smi">module</span><span class="pl-kos">.</span><span class="pl-c1">exports</span> <span class="pl-c1">=</span> <span class="pl-kos">{</span>
-   	<span class="pl-c1">entry</span>: <span class="pl-s">'./src/index.js'</span><span class="pl-kos">,</span> <span class="pl-c">// 这里是起点</span>
- <span class="pl-kos">}</span><span class="pl-kos">;</span></pre></div>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-smi">module</span><span class="pl-kos">.</span><span class="pl-c1">exports</span> <span class="pl-c1">=</span> <span class="pl-kos">{</span>
+	<span class="pl-c1">entry</span>: <span class="pl-s">'./src/index.js'</span><span class="pl-kos">,</span> <span class="pl-c">// 这里是起点</span>
+<span class="pl-kos">}</span><span class="pl-kos">;</span></pre></div>
 <ul>
 <li>将代码转换为 AST：使用 @babel/parser 等工具将源代码字符串转换成一个抽象语法树。</li>
 <li>遍历 AST，收集依赖：使用 @babel/traverse 等工具遍历 AST，寻找所有的模块导入语句（import、require）。每找到一个，就把它添加到当前模块的依赖列表中。</li>
 <li>递归分析所有依赖模块</li>
 </ul>
-<div class="highlight highlight-source-js"><pre class="notranslate"> <span class="pl-c">// ./src/index.js</span>
- <span class="pl-k">import</span> <span class="pl-s1">message</span> <span class="pl-k">from</span> <span class="pl-s">'./message.js'</span><span class="pl-kos">;</span>
- <span class="pl-smi">console</span><span class="pl-kos">.</span><span class="pl-en">log</span><span class="pl-kos">(</span><span class="pl-s1">message</span><span class="pl-kos">)</span><span class="pl-kos">;</span>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-c">// ./src/index.js</span>
+<span class="pl-k">import</span> <span class="pl-s1">message</span> <span class="pl-k">from</span> <span class="pl-s">'./message.js'</span><span class="pl-kos">;</span>
+<span class="pl-smi">console</span><span class="pl-kos">.</span><span class="pl-en">log</span><span class="pl-kos">(</span><span class="pl-s1">message</span><span class="pl-kos">)</span><span class="pl-kos">;</span>
 
- <span class="pl-c">//./src/message.js</span>
- <span class="pl-k">export</span> <span class="pl-k">default</span> <span class="pl-s">"Hello, Webpack!"</span><span class="pl-kos">;</span></pre></div>
-<p>对于message.js，会重复步骤：<br>
-- 读取 message 源码<br>
-- 转换为AST<br>
-- 遍历AST，收集 message 的依赖，直到项目中再也没有未被发现的模块<br>
-在分析过程中，webpack会调用配置中对应的Loader对模块的源码进行转换，将非JS模块转化为JS代码，以便webpack处理。</p>
+<span class="pl-c">//./src/message.js</span>
+<span class="pl-k">export</span> <span class="pl-k">default</span> <span class="pl-s">"Hello, Webpack!"</span><span class="pl-kos">;</span></pre></div>
+<p>对于message.js，会重复步骤：</p>
+<ul>
+<li>读取 message 源码</li>
+<li>转换为AST</li>
+<li>遍历AST，收集 message 的依赖，直到项目中再也没有未被发现的模块</li>
+</ul>
+<p>在分析过程中，webpack会调用配置中对应的Loader对模块的源码进行转换，将非JS模块转化为JS代码，以便webpack处理。</p>
 <ul>
 <li>
 <p>一个 .vue 文件会经过 vue-loader 处理，被拆解成 JS 模块。</p>
@@ -171,187 +167,158 @@ body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;
 <li>
 <p>一个 .ts 文件会经过 ts-loader 处理，被编译成纯 JavaScript</p>
 </li>
-<li>
-<p>生成模块列表：Webpack 已经收集了所有模块并完成了转换。它需要为这些模块创建一个“花名册”，以便在浏览器中能够准确地找到和执行它们。这个花名册就是我们所说的模块列表，它通常体现为一个对象或一个数组。<br>
-这个列表中的每个条目都包含两个关键信息：</p>
-<ul>
-<li>id</li>
-<li>模块转换后的代码：经过 Loader 处理、并且被 Webpack 封装在一个函数中的可执行代码</li>
 </ul>
-</li>
-</ul>
-<div class="highlight highlight-source-js"><pre class="notranslate"> <span class="pl-c">// 这就是最终生成的一个简化到极致的模块列表结构示例（打包产物的一部分）</span>
- <span class="pl-k">var</span> <span class="pl-s1">__webpack_modules__</span> <span class="pl-c1">=</span> <span class="pl-kos">(</span><span class="pl-kos">{</span>
-   <span class="pl-c">// 模块 ID: 函数</span>
-   <span class="pl-s">"./src/index.js"</span>: <span class="pl-kos">(</span><span class="pl-k">function</span><span class="pl-kos">(</span><span class="pl-s1">module</span><span class="pl-kos">,</span> <span class="pl-s1">__webpack_exports__</span><span class="pl-kos">,</span> <span class="pl-s1">__webpack_require__</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
-     <span class="pl-c">// 这是转换后的 index.js 的代码</span>
-     <span class="pl-c">// Webpack 将 import 语句替换成了 __webpack_require__ 函数调用</span>
-     <span class="pl-k">const</span> <span class="pl-s1">message</span> <span class="pl-c1">=</span> <span class="pl-s1">__webpack_require__</span><span class="pl-kos">(</span><span class="pl-s">"./src/message.js"</span><span class="pl-kos">)</span><span class="pl-kos">;</span>
-     <span class="pl-smi">console</span><span class="pl-kos">.</span><span class="pl-en">log</span><span class="pl-kos">(</span><span class="pl-s1">message</span><span class="pl-kos">)</span><span class="pl-kos">;</span>
-   <span class="pl-kos">}</span><span class="pl-kos">)</span><span class="pl-kos">,</span>
-   
-   <span class="pl-s">"./src/message.js"</span>: <span class="pl-kos">(</span><span class="pl-k">function</span><span class="pl-kos">(</span><span class="pl-s1">module</span><span class="pl-kos">,</span> <span class="pl-s1">__webpack_exports__</span><span class="pl-kos">,</span> <span class="pl-s1">__webpack_require__</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
-     <span class="pl-c">// 这是转换后的 message.js 的代码</span>
-     <span class="pl-s1">module</span><span class="pl-kos">.</span><span class="pl-c1">exports</span> <span class="pl-c1">=</span> <span class="pl-s">"Hello, Webpack!"</span><span class="pl-kos">;</span>
-   <span class="pl-kos">}</span><span class="pl-kos">)</span>
- <span class="pl-kos">}</span><span class="pl-kos">)</span><span class="pl-kos">;</span></pre></div>
 </li>
 <li>
-<p>封装与输出，生成最终打包文件<br>
-Webpack 不会直接输出上面的模块列表。它会将这个列表嵌入到一个自执行函数 中，这个函数被称为 Webpack Bootstrap（启动函数）。这个启动函数包含了 <strong>webpack_require</strong> 等核心方法的实现，用于在浏览器中按需加载和执行模块。</p>
-</li>
-</ul>
-<div class="highlight highlight-source-js"><pre class="notranslate"> <span class="pl-c">//最终打包产物（bundle.js）的简化结构</span>
- <span class="pl-kos">(</span><span class="pl-k">function</span><span class="pl-kos">(</span><span class="pl-s1">modules</span><span class="pl-kos">)</span> <span class="pl-kos">{</span> <span class="pl-c">// webpackBootstrap</span>
- 	  <span class="pl-c">// 1. 初始化模块缓存（已加载的模块会在这里缓存）</span>
- 	  <span class="pl-k">var</span> <span class="pl-s1">installedModules</span> <span class="pl-c1">=</span> <span class="pl-kos">{</span><span class="pl-kos">}</span><span class="pl-kos">;</span>
- 	  
- 	  <span class="pl-c">// 2. 实现 __webpack_require__ 函数（这是核心！）</span>
- 	  <span class="pl-k">function</span> <span class="pl-en">__webpack_require__</span><span class="pl-kos">(</span><span class="pl-s1">moduleId</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
- 	    <span class="pl-c">// 检查缓存</span>
- 	    <span class="pl-k">if</span><span class="pl-kos">(</span><span class="pl-s1">installedModules</span><span class="pl-kos">[</span><span class="pl-s1">moduleId</span><span class="pl-kos">]</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
- 	      <span class="pl-k">return</span> <span class="pl-s1">installedModules</span><span class="pl-kos">[</span><span class="pl-s1">moduleId</span><span class="pl-kos">]</span><span class="pl-kos">.</span><span class="pl-c1">exports</span><span class="pl-kos">;</span>
- 	    <span class="pl-kos">}</span>
- 	    <span class="pl-c">// 创建新模块并放入缓存</span>
- 	    <span class="pl-k">var</span> <span class="pl-s1">module</span> <span class="pl-c1">=</span> <span class="pl-s1">installedModules</span><span class="pl-kos">[</span><span class="pl-s1">moduleId</span><span class="pl-kos">]</span> <span class="pl-c1">=</span> <span class="pl-kos">{</span>
- 	      <span class="pl-c1">exports</span>: <span class="pl-kos">{</span><span class="pl-kos">}</span>
- 	    <span class="pl-kos">}</span><span class="pl-kos">;</span>
- 	    <span class="pl-c">// 从模块列表中找到对应的函数并执行它</span>
- 	    <span class="pl-c">// 这就是“模块转换后的代码”被执行的地方！</span>
- 	    <span class="pl-s1">modules</span><span class="pl-kos">[</span><span class="pl-s1">moduleId</span><span class="pl-kos">]</span><span class="pl-kos">.</span><span class="pl-en">call</span><span class="pl-kos">(</span><span class="pl-s1">module</span><span class="pl-kos">.</span><span class="pl-c1">exports</span><span class="pl-kos">,</span> <span class="pl-s1">module</span><span class="pl-kos">,</span> <span class="pl-s1">module</span><span class="pl-kos">.</span><span class="pl-c1">exports</span><span class="pl-kos">,</span> <span class="pl-s1">__webpack_require__</span><span class="pl-kos">)</span><span class="pl-kos">;</span>
- 	    <span class="pl-c">// 返回模块的导出内容</span>
- 	    <span class="pl-k">return</span> <span class="pl-s1">module</span><span class="pl-kos">.</span><span class="pl-c1">exports</span><span class="pl-kos">;</span>
- 	  <span class="pl-kos">}</span>
- 	  
- 	  <span class="pl-c">// 3. 从入口模块开始，启动整个应用程序</span>
- 	  <span class="pl-k">return</span> <span class="pl-en">__webpack_require__</span><span class="pl-kos">(</span><span class="pl-s">"./src/index.js"</span><span class="pl-kos">)</span><span class="pl-kos">;</span>
- 	<span class="pl-kos">}</span><span class="pl-kos">)</span>
- 	<span class="pl-c">// 将我们步骤4中生成的“模块列表”作为参数传入</span>
- 	<span class="pl-kos">(</span><span class="pl-kos">{</span>
- 	  <span class="pl-s">"./src/index.js"</span>: <span class="pl-kos">(</span><span class="pl-k">function</span><span class="pl-kos">(</span><span class="pl-s1">module</span><span class="pl-kos">,</span> <span class="pl-s1">exports</span><span class="pl-kos">,</span> <span class="pl-s1">__webpack_require__</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
- 	    <span class="pl-en">eval</span><span class="pl-kos">(</span><span class="pl-s">"...转换后的 index.js 代码..."</span><span class="pl-kos">)</span><span class="pl-kos">;</span>
- 	  <span class="pl-kos">}</span><span class="pl-kos">)</span><span class="pl-kos">,</span>
- 	  <span class="pl-s">"./src/message.js"</span>: <span class="pl-kos">(</span><span class="pl-k">function</span><span class="pl-kos">(</span><span class="pl-s1">module</span><span class="pl-kos">,</span> <span class="pl-s1">exports</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
- 	    <span class="pl-en">eval</span><span class="pl-kos">(</span><span class="pl-s">"...转换后的 message.js 代码..."</span><span class="pl-kos">)</span><span class="pl-kos">;</span>
- 	  <span class="pl-kos">}</span><span class="pl-kos">)</span>
- <span class="pl-kos">}</span><span class="pl-kos">)</span><span class="pl-kos">;</span></pre></div>
-</li>
-<li>
-<p>计算chunk hash基于chunk的最终内容<br>
-在所有代码转换、优化完成后，在生成最终输出文件之前，基于 Chunk 的最终内容（包括模块代码、运行时代码、模板等）</p>
-<div class="highlight highlight-source-js"><pre class="notranslate"> <span class="pl-c">// webpack.config.js</span>
- <span class="pl-smi">module</span><span class="pl-kos">.</span><span class="pl-c1">exports</span> <span class="pl-c1">=</span> <span class="pl-kos">{</span>
-   <span class="pl-c1">output</span>: <span class="pl-kos">{</span>
-     <span class="pl-c1">filename</span>: <span class="pl-s">'[name].[chunkhash:8].js'</span><span class="pl-kos">,</span>
-     <span class="pl-c1">chunkFilename</span>: <span class="pl-s">'[name].[chunkhash:8].chunk.js'</span><span class="pl-kos">,</span>
-   <span class="pl-kos">}</span><span class="pl-kos">,</span>
-   <span class="pl-c1">plugins</span>: <span class="pl-kos">[</span>
-     <span class="pl-k">new</span> <span class="pl-v">MiniCssExtractPlugin</span><span class="pl-kos">(</span><span class="pl-kos">{</span>
-       <span class="pl-c1">filename</span>: <span class="pl-s">'[name].[contenthash:8].css'</span><span class="pl-kos">,</span>
-       <span class="pl-c1">chunkFilename</span>: <span class="pl-s">'[name].[contenthash:8].chunk.css'</span><span class="pl-kos">,</span>
-     <span class="pl-kos">}</span><span class="pl-kos">)</span><span class="pl-kos">,</span>
-   <span class="pl-kos">]</span><span class="pl-kos">,</span>
-   <span class="pl-c1">optimization</span>: <span class="pl-kos">{</span>
-     <span class="pl-c1">splitChunks</span>: <span class="pl-kos">{</span>
-       <span class="pl-c1">chunks</span>: <span class="pl-s">'all'</span><span class="pl-kos">,</span>
-       <span class="pl-c1">cacheGroups</span>: <span class="pl-kos">{</span>
-         <span class="pl-c1">react</span>: <span class="pl-kos">{</span>
-           <span class="pl-c1">test</span>: <span class="pl-pds"><span class="pl-c1">/</span><span class="pl-kos">[</span><span class="pl-cce">\\</span><span class="pl-c1">/</span><span class="pl-kos">]</span><span class="pl-s">n</span><span class="pl-s">o</span><span class="pl-s">d</span><span class="pl-s">e</span><span class="pl-s">_</span><span class="pl-s">m</span><span class="pl-s">o</span><span class="pl-s">d</span><span class="pl-s">u</span><span class="pl-s">l</span><span class="pl-s">e</span><span class="pl-s">s</span><span class="pl-kos">[</span><span class="pl-cce">\\</span><span class="pl-c1">/</span><span class="pl-kos">]</span><span class="pl-kos">(</span><span class="pl-s">r</span><span class="pl-s">e</span><span class="pl-s">a</span><span class="pl-s">c</span><span class="pl-s">t</span><span class="pl-c1">|</span><span class="pl-s">r</span><span class="pl-s">e</span><span class="pl-s">a</span><span class="pl-s">c</span><span class="pl-s">t</span><span class="pl-s">-</span><span class="pl-s">d</span><span class="pl-s">o</span><span class="pl-s">m</span><span class="pl-kos">)</span><span class="pl-kos">[</span><span class="pl-cce">\\</span><span class="pl-c1">/</span><span class="pl-kos">]</span><span class="pl-c1">/</span></span><span class="pl-kos">,</span>
-           <span class="pl-c1">name</span>: <span class="pl-s">'react'</span><span class="pl-kos">,</span>
-           <span class="pl-c1">priority</span>: <span class="pl-c1">20</span><span class="pl-kos">,</span>
-         <span class="pl-kos">}</span><span class="pl-kos">,</span>
-         <span class="pl-c1">vendors</span>: <span class="pl-kos">{</span>
-           <span class="pl-c1">test</span>: <span class="pl-pds"><span class="pl-c1">/</span><span class="pl-kos">[</span><span class="pl-cce">\\</span><span class="pl-c1">/</span><span class="pl-kos">]</span><span class="pl-s">n</span><span class="pl-s">o</span><span class="pl-s">d</span><span class="pl-s">e</span><span class="pl-s">_</span><span class="pl-s">m</span><span class="pl-s">o</span><span class="pl-s">d</span><span class="pl-s">u</span><span class="pl-s">l</span><span class="pl-s">e</span><span class="pl-s">s</span><span class="pl-kos">[</span><span class="pl-cce">\\</span><span class="pl-c1">/</span><span class="pl-kos">]</span><span class="pl-c1">/</span></span><span class="pl-kos">,</span>
-           <span class="pl-c1">name</span>: <span class="pl-s">'vendors'</span><span class="pl-kos">,</span>
-           <span class="pl-c1">priority</span>: <span class="pl-c1">10</span><span class="pl-kos">,</span>
-         <span class="pl-kos">}</span><span class="pl-kos">,</span>
-       <span class="pl-kos">}</span><span class="pl-kos">,</span>
-     <span class="pl-kos">}</span><span class="pl-kos">,</span>
-   <span class="pl-kos">}</span><span class="pl-kos">,</span>
- <span class="pl-kos">}</span><span class="pl-kos">;</span></pre></div>
-<p>输出结果：</p>
-<div class="highlight highlight-source-js"><pre class="notranslate"> <span class="pl-s1">main</span><span class="pl-kos">.</span><span class="pl-c1">a1b2c3d4</span><span class="pl-kos">.</span><span class="pl-c1">js</span>        <span class="pl-c">// 业务代码 - 频繁变动</span>
- <span class="pl-s1">react</span><span class="pl-kos">.</span><span class="pl-c1">e5f6g7h8</span><span class="pl-kos">.</span><span class="pl-c1">js</span>       <span class="pl-c">// React 相关 - 较少变动  </span>
- <span class="pl-s1">vendors</span><span class="pl-kos">.</span><span class="pl-c1">i9j0k1l2</span><span class="pl-kos">.</span><span class="pl-c1">js</span>     <span class="pl-c">// 其他第三方库 - 较少变动</span></pre></div>
-<p>缓存效果：</p>
+<p>分组形成 Chunk：<br>
+Chunk 形成规则：</p>
 <ul>
-<li>只修改业务代码 → 只有 main.a1b2c3d4.js 变为 main.m3n4o5p6.js</li>
-<li>react.<em>.js 和 vendors.</em>.js 的 hash 不变，浏览器继续使用缓存</li>
-<li>用户只需下载变化了的 main 文件，大大提升加载速度</li>
+<li>每个入口模块会形成一个独立的 chunk</li>
+<li>动态导入 (import()) 创建新的异步 Chunk</li>
+<li>SplitChunksPlugin 根据配置分割 Chunk</li>
 </ul>
-<p>注意事项：</p>
-<ul>
-<li>模块标识符问题<br>
-早期 Webpack 版本中，即使模块内容没变，模块 ID 的变化也会导致 chunkhash 变化。</li>
-</ul>
-<div class="highlight highlight-source-js"><pre class="notranslate"> <span class="pl-c">// 第一次构建</span>
- <span class="pl-c">// moduleA.js (ID: 1)</span>
- <span class="pl-k">export</span> <span class="pl-k">const</span> <span class="pl-v">A</span> <span class="pl-c1">=</span> <span class="pl-s">'Module A'</span><span class="pl-kos">;</span>
-
- <span class="pl-c">// moduleB.js (ID: 2) </span>
- <span class="pl-k">export</span> <span class="pl-k">const</span> <span class="pl-v">B</span> <span class="pl-c1">=</span> <span class="pl-s">'Module B'</span><span class="pl-kos">;</span>
-
- <span class="pl-c">// 生成的Chunk内容大致如下：</span>
- <span class="pl-c">/******/</span> <span class="pl-kos">(</span><span class="pl-kos">[</span>
- <span class="pl-c">/* 0 */</span> <span class="pl-k">function</span><span class="pl-kos">(</span><span class="pl-s1">module</span><span class="pl-kos">,</span> <span class="pl-s1">exports</span><span class="pl-kos">,</span> <span class="pl-s1">__webpack_require__</span><span class="pl-kos">)</span> <span class="pl-kos">{</span> <span class="pl-c">/* 入口模块 */</span> <span class="pl-kos">}</span><span class="pl-kos">,</span>
- <span class="pl-c">/* 1 */</span> <span class="pl-k">function</span><span class="pl-kos">(</span><span class="pl-s1">module</span><span class="pl-kos">,</span> <span class="pl-s1">exports</span><span class="pl-kos">)</span> <span class="pl-kos">{</span> <span class="pl-c">/* Module A 的代码 */</span> <span class="pl-kos">}</span><span class="pl-kos">,</span>
- <span class="pl-c">/* 2 */</span> <span class="pl-k">function</span><span class="pl-kos">(</span><span class="pl-s1">module</span><span class="pl-kos">,</span> <span class="pl-s1">exports</span><span class="pl-kos">)</span> <span class="pl-kos">{</span> <span class="pl-c">/* Module B 的代码 */</span> <span class="pl-kos">}</span>
- <span class="pl-c">/******/</span> <span class="pl-kos">]</span><span class="pl-kos">)</span><span class="pl-kos">;</span>
-
-
- <span class="pl-c">// 第二次构建（只是修改了其他不相关的文件）</span>
- <span class="pl-c">// moduleA.js (ID: 3 ← ID变了!)</span>
- <span class="pl-k">export</span> <span class="pl-k">const</span> <span class="pl-v">A</span> <span class="pl-c1">=</span> <span class="pl-s">'Module A'</span><span class="pl-kos">;</span> <span class="pl-c">// 内容完全一样</span>
-
- <span class="pl-c">// moduleB.js (ID: 4 ← ID也变了!)</span>
- <span class="pl-k">export</span> <span class="pl-k">const</span> <span class="pl-v">B</span> <span class="pl-c1">=</span> <span class="pl-s">'Module B'</span><span class="pl-kos">;</span> <span class="pl-c">// 内容完全一样</span>
-
- <span class="pl-c">// 生成的Chunk内容：</span>
- <span class="pl-c">/******/</span> <span class="pl-kos">(</span><span class="pl-kos">[</span>
- <span class="pl-c">/* 0 */</span> <span class="pl-k">function</span><span class="pl-kos">(</span><span class="pl-s1">module</span><span class="pl-kos">,</span> <span class="pl-s1">exports</span><span class="pl-kos">,</span> <span class="pl-s1">__webpack_require__</span><span class="pl-kos">)</span> <span class="pl-kos">{</span> <span class="pl-c">/* 入口模块 */</span> <span class="pl-kos">}</span><span class="pl-kos">,</span>
- <span class="pl-c">/* 3 */</span> <span class="pl-k">function</span><span class="pl-kos">(</span><span class="pl-s1">module</span><span class="pl-kos">,</span> <span class="pl-s1">exports</span><span class="pl-kos">)</span> <span class="pl-kos">{</span> <span class="pl-c">/* Module A 的代码 */</span> <span class="pl-kos">}</span><span class="pl-kos">,</span> <span class="pl-c">// ID从1变成3</span>
- <span class="pl-c">/* 4 */</span> <span class="pl-k">function</span><span class="pl-kos">(</span><span class="pl-s1">module</span><span class="pl-kos">,</span> <span class="pl-s1">exports</span><span class="pl-kos">)</span> <span class="pl-kos">{</span> <span class="pl-c">/* Module B 的代码 */</span> <span class="pl-kos">}</span>  <span class="pl-c">// ID从2变成4</span>
- <span class="pl-c">/******/</span> <span class="pl-kos">]</span><span class="pl-kos">)</span><span class="pl-kos">;</span></pre></div>
-<p>虽然模块内容完全没变，但由于模块ID从 [1, 2] 变成了 [3, 4]，Chunk的最终内容发生了变化，所以 chunkhash 也会改变。<br>
-解决方案：</p>
-<div class="highlight highlight-source-js"><pre class="notranslate"> optimization: <span class="pl-kos">{</span>
-   <span class="pl-c1">moduleIds</span>: <span class="pl-s">'deterministic'</span><span class="pl-kos">,</span> <span class="pl-c">// Webpack 4+</span>
-   <span class="pl-c">// 或</span>
-   <span class="pl-c1">chunkIds</span>: <span class="pl-s">'deterministic'</span><span class="pl-kos">,</span>
- <span class="pl-kos">}</span></pre></div>
+</li>
+</ol>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-c">// 形成的 Chunk 结构</span>
+<span class="pl-k">const</span> <span class="pl-s1">mainChunk</span> <span class="pl-c1">=</span> <span class="pl-kos">{</span>
+  <span class="pl-c1">name</span>: <span class="pl-s">'main'</span><span class="pl-kos">,</span>
+  <span class="pl-c1">entryModule</span>: <span class="pl-s">'./src/index.js'</span><span class="pl-kos">,</span>
+  <span class="pl-c1">modules</span>: <span class="pl-kos">[</span>
+    <span class="pl-s">'./src/index.js'</span><span class="pl-kos">,</span>
+    <span class="pl-s">'./src/message.js'</span><span class="pl-kos">,</span> 
+  <span class="pl-kos">]</span><span class="pl-kos">,</span>
+  <span class="pl-c1">files</span>: <span class="pl-kos">[</span><span class="pl-s">'main.js'</span><span class="pl-kos">]</span> <span class="pl-c">// 最终输出的文件名</span>
+<span class="pl-kos">}</span><span class="pl-kos">;</span></pre></div>
+<ol start="3">
+<li>代码生成与优化</li>
+</ol>
+<p>Webpack 将每个模块包装成函数</p>
+<p>代码优化：</p>
 <ul>
 <li>
-<p>Webpack 运行时代码<br>
-运行时代码变化会影响所有包含它的 Chunk 的 hash。<br>
-早期 Webpack 中，运行时代码包含了所有 Chunk 的模块信息表。当你修改业务代码时：</p>
+<p>Tree Shaking：虽然 helper 函数导出了但没使用，可能被标记（但需要配置才能移除）</p>
+</li>
+<li>
+<p>Scope Hoisting：将模块尽可能合并到同一个作用域</p>
+</li>
+<li>
+<p>Minification：删除空白、缩短变量名等</p>
+</li>
+</ul>
+<ol start="4">
+<li>计算chunk hash</li>
+</ol>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-k">const</span> <span class="pl-s1">crypto</span> <span class="pl-c1">=</span> <span class="pl-en">require</span><span class="pl-kos">(</span><span class="pl-s">'crypto'</span><span class="pl-kos">)</span><span class="pl-kos">;</span>
+
+<span class="pl-c">// Webpack 获取 Chunk 的最终内容</span>
+<span class="pl-k">const</span> <span class="pl-s1">chunkContent</span> <span class="pl-c1">=</span> <span class="pl-s">`(function(modules) { ... })([ ... ])`</span><span class="pl-kos">;</span>
+
+<span class="pl-c">// 计算 Hash（简化表示）</span>
+<span class="pl-k">const</span> <span class="pl-s1">chunkHash</span> <span class="pl-c1">=</span> <span class="pl-s1">crypto</span><span class="pl-kos">.</span><span class="pl-en">createHash</span><span class="pl-kos">(</span><span class="pl-s">'md4'</span><span class="pl-kos">)</span>
+  <span class="pl-kos">.</span><span class="pl-en">update</span><span class="pl-kos">(</span><span class="pl-s1">chunkContent</span><span class="pl-kos">)</span>
+  <span class="pl-kos">.</span><span class="pl-en">digest</span><span class="pl-kos">(</span><span class="pl-s">'hex'</span><span class="pl-kos">)</span>
+  <span class="pl-kos">.</span><span class="pl-en">substring</span><span class="pl-kos">(</span><span class="pl-c1">0</span><span class="pl-kos">,</span> <span class="pl-c1">8</span><span class="pl-kos">)</span><span class="pl-kos">;</span> <span class="pl-c">// 取前8位</span>
+
+<span class="pl-smi">console</span><span class="pl-kos">.</span><span class="pl-en">log</span><span class="pl-kos">(</span><span class="pl-s1">chunkHash</span><span class="pl-kos">)</span><span class="pl-kos">;</span> <span class="pl-c">// 例如: 'a1b2c3d4'</span></pre></div>
+<p>Hash 基于的内容包括：</p>
 <ul>
 <li>
-<p>业务模块的 ID 或依赖关系可能发生变化</p>
+<p>所有模块的转换后代码</p>
 </li>
 <li>
-<p>运行时代码中的模块信息表随之更新</p>
+<p>模块ID和依赖关系</p>
 </li>
 <li>
-<p>由于运行时代码嵌在 main Chunk 中，它的内容变化导致 hash 变化</p>
-</li>
-</ul>
-</li>
-</ul>
-<p>可以通过提取 runtime 来解决：</p>
-<div class="highlight highlight-source-js"><pre class="notranslate"> optimization: <span class="pl-kos">{</span>
-   <span class="pl-c1">runtimeChunk</span>: <span class="pl-kos">{</span>
-     <span class="pl-c1">name</span>: <span class="pl-s">'runtime'</span><span class="pl-kos">,</span>
-   <span class="pl-kos">}</span><span class="pl-kos">,</span>
- <span class="pl-kos">}</span></pre></div>
-<ul>
-<li>Hash 长度</li>
-</ul>
-<div class="highlight highlight-source-js"><pre class="notranslate"> filename: <span class="pl-s">'[name].[chunkhash:8].js'</span> <span class="pl-c">// 只使用前8位，平衡可读性与唯一性</span></pre></div>
+<p>Webpack 运行时代码</p>
 </li>
 <li>
-<p>产生chunk assets</p>
+<p>模块映射表</p>
 </li>
 </ul>
+<ol start="5">
+<li>生成chunk assets<br>
+使用 Hash 生成文件名：</li>
+</ol>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-c">// 根据 output.filename 配置生成最终文件名</span>
+<span class="pl-k">const</span> <span class="pl-s1">filenameTemplate</span> <span class="pl-c1">=</span> <span class="pl-s">'[name].[chunkhash].js'</span><span class="pl-kos">;</span>
+<span class="pl-k">const</span> <span class="pl-s1">finalFilename</span> <span class="pl-c1">=</span> <span class="pl-s1">filenameTemplate</span>
+  <span class="pl-kos">.</span><span class="pl-en">replace</span><span class="pl-kos">(</span><span class="pl-s">'[name]'</span><span class="pl-kos">,</span> <span class="pl-s">'main'</span><span class="pl-kos">)</span>
+  <span class="pl-kos">.</span><span class="pl-en">replace</span><span class="pl-kos">(</span><span class="pl-s">'[chunkhash]'</span><span class="pl-kos">,</span> <span class="pl-s">'a1b2c3d4'</span><span class="pl-kos">)</span><span class="pl-kos">;</span>
+
+<span class="pl-smi">console</span><span class="pl-kos">.</span><span class="pl-en">log</span><span class="pl-kos">(</span><span class="pl-s1">finalFilename</span><span class="pl-kos">)</span><span class="pl-kos">;</span> <span class="pl-c">// 'main.a1b2c3d4.js'</span></pre></div>
+<p>创建 Chunk Asset 对象:</p>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-k">const</span> <span class="pl-s1">mainChunkAsset</span> <span class="pl-c1">=</span> <span class="pl-kos">{</span>
+  <span class="pl-en">source</span>: <span class="pl-k">function</span><span class="pl-kos">(</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-k">return</span> <span class="pl-s1">chunkContent</span><span class="pl-kos">;</span> <span class="pl-c">// 阶段4生成的完整代码</span>
+  <span class="pl-kos">}</span><span class="pl-kos">,</span>
+  <span class="pl-en">size</span>: <span class="pl-k">function</span><span class="pl-kos">(</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-k">return</span> <span class="pl-s1">chunkContent</span><span class="pl-kos">.</span><span class="pl-c1">length</span><span class="pl-kos">;</span>
+  <span class="pl-kos">}</span>
+<span class="pl-kos">}</span><span class="pl-kos">;</span>
+
+<span class="pl-c">// Webpack 的 assets 对象</span>
+<span class="pl-s1">compilation</span><span class="pl-kos">.</span><span class="pl-c1">assets</span> <span class="pl-c1">=</span> <span class="pl-kos">{</span>
+  <span class="pl-s">'main.a1b2c3d4.js'</span>: <span class="pl-s1">mainChunkAsset</span>
+<span class="pl-kos">}</span><span class="pl-kos">;</span></pre></div>
+<ol start="6">
+<li>输出文件</li>
+</ol>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-k">const</span> <span class="pl-s1">fs</span> <span class="pl-c1">=</span> <span class="pl-en">require</span><span class="pl-kos">(</span><span class="pl-s">'fs'</span><span class="pl-kos">)</span><span class="pl-kos">;</span>
+<span class="pl-k">const</span> <span class="pl-s1">path</span> <span class="pl-c1">=</span> <span class="pl-en">require</span><span class="pl-kos">(</span><span class="pl-s">'path'</span><span class="pl-kos">)</span><span class="pl-kos">;</span>
+
+<span class="pl-c">// 遍历所有 assets</span>
+<span class="pl-k">for</span> <span class="pl-kos">(</span><span class="pl-k">const</span> <span class="pl-kos">[</span><span class="pl-s1">filename</span><span class="pl-kos">,</span> <span class="pl-s1">asset</span><span class="pl-kos">]</span> <span class="pl-k">of</span> <span class="pl-v">Object</span><span class="pl-kos">.</span><span class="pl-en">entries</span><span class="pl-kos">(</span><span class="pl-s1">compilation</span><span class="pl-kos">.</span><span class="pl-c1">assets</span><span class="pl-kos">)</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+  <span class="pl-k">const</span> <span class="pl-s1">filePath</span> <span class="pl-c1">=</span> <span class="pl-s1">path</span><span class="pl-kos">.</span><span class="pl-en">join</span><span class="pl-kos">(</span><span class="pl-s1">outputPath</span><span class="pl-kos">,</span> <span class="pl-s1">filename</span><span class="pl-kos">)</span><span class="pl-kos">;</span>
+  <span class="pl-k">const</span> <span class="pl-s1">content</span> <span class="pl-c1">=</span> <span class="pl-s1">asset</span><span class="pl-kos">.</span><span class="pl-en">source</span><span class="pl-kos">(</span><span class="pl-kos">)</span><span class="pl-kos">;</span>
+  
+  <span class="pl-c">// 确保目录存在</span>
+  <span class="pl-s1">fs</span><span class="pl-kos">.</span><span class="pl-en">mkdirSync</span><span class="pl-kos">(</span><span class="pl-s1">path</span><span class="pl-kos">.</span><span class="pl-en">dirname</span><span class="pl-kos">(</span><span class="pl-s1">filePath</span><span class="pl-kos">)</span><span class="pl-kos">,</span> <span class="pl-kos">{</span> <span class="pl-c1">recursive</span>: <span class="pl-c1">true</span> <span class="pl-kos">}</span><span class="pl-kos">)</span><span class="pl-kos">;</span>
+  
+  <span class="pl-c">// 写入文件</span>
+  <span class="pl-s1">fs</span><span class="pl-kos">.</span><span class="pl-en">writeFileSync</span><span class="pl-kos">(</span><span class="pl-s1">filePath</span><span class="pl-kos">,</span> <span class="pl-s1">content</span><span class="pl-kos">)</span><span class="pl-kos">;</span>
+  
+  <span class="pl-smi">console</span><span class="pl-kos">.</span><span class="pl-en">log</span><span class="pl-kos">(</span><span class="pl-s">`输出: <span class="pl-s1"><span class="pl-kos">${</span><span class="pl-s1">filename</span><span class="pl-kos">}</span></span> (<span class="pl-s1"><span class="pl-kos">${</span><span class="pl-s1">content</span><span class="pl-kos">.</span><span class="pl-c1">length</span><span class="pl-kos">}</span></span> bytes)`</span><span class="pl-kos">)</span><span class="pl-kos">;</span>
+<span class="pl-kos">}</span></pre></div>
+<pre class="notranslate"><code class="notranslate">dist/
+  └── main.a1b2c3d4.js
+</code></pre>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>阶段</th>
+<th>主要产出</th>
+<th>数据形态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>模块记录</td>
+<td>单个模块信息</td>
+<td>内存对象</td>
+</tr>
+<tr>
+<td>依赖图</td>
+<td>模块间关系</td>
+<td>图数据结构</td>
+</tr>
+<tr>
+<td>chunk</td>
+<td>模块分组</td>
+<td>包含多个模块的集合</td>
+</tr>
+<tr>
+<td>chunk hash</td>
+<td>内容标识</td>
+<td>字符串哈希值</td>
+</tr>
+<tr>
+<td>chunk assets</td>
+<td>最终文件</td>
+<td>文件内容+文件名</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<h3>产生chunk assets</h3>
 <markdown-accessiblity-table><table role="table">
 <thead>
 <tr>
@@ -373,14 +340,81 @@ Webpack 不会直接输出上面的模块列表。它会将这个列表嵌入到
 </tr>
 </tbody>
 </table></markdown-accessiblity-table>
-<h3>输出</h3>
-<p>webpack 利用 node 中的 fs 模块（文件处理模块），根据编译产生的总的 assets，生成相应的文件。</p>
+<h2>其他</h2>
+<h3>chunk hash有什么用</h3>
+<p>缓存效果：</p>
 <ul>
-<li>输出过程：称为 emit 阶段</li>
-<li>实现方式：使用 node.js 的 fs 模块</li>
-<li>输出内容：将资源列表中的每个文件写入磁盘</li>
-<li>输出结果：生成最终的打包文件</li>
-</ul></div>
+<li>只修改业务代码 → 只有 main.a1b2c3d4.js 变为 main.m3n4o5p6.js</li>
+<li>react.<em>.js 和 vendors.</em>.js 的 hash 不变，浏览器继续使用缓存</li>
+<li>用户只需下载变化了的 main 文件，大大提升加载速度</li>
+</ul>
+<h4>注意事项：</h4>
+<ul>
+<li>模块标识符问题</li>
+</ul>
+<p>早期 Webpack 版本中，即使模块内容没变，模块 ID 的变化也会导致 chunkhash 变化。</p>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-c">// 第一次构建</span>
+<span class="pl-c">// moduleA.js (ID: 1)</span>
+<span class="pl-k">export</span> <span class="pl-k">const</span> <span class="pl-v">A</span> <span class="pl-c1">=</span> <span class="pl-s">'Module A'</span><span class="pl-kos">;</span>
+
+<span class="pl-c">// moduleB.js (ID: 2) </span>
+<span class="pl-k">export</span> <span class="pl-k">const</span> <span class="pl-v">B</span> <span class="pl-c1">=</span> <span class="pl-s">'Module B'</span><span class="pl-kos">;</span>
+
+<span class="pl-c">// 生成的Chunk内容大致如下：</span>
+<span class="pl-c">/******/</span> <span class="pl-kos">(</span><span class="pl-kos">[</span>
+<span class="pl-c">/* 0 */</span> <span class="pl-k">function</span><span class="pl-kos">(</span><span class="pl-s1">module</span><span class="pl-kos">,</span> <span class="pl-s1">exports</span><span class="pl-kos">,</span> <span class="pl-s1">__webpack_require__</span><span class="pl-kos">)</span> <span class="pl-kos">{</span> <span class="pl-c">/* 入口模块 */</span> <span class="pl-kos">}</span><span class="pl-kos">,</span>
+<span class="pl-c">/* 1 */</span> <span class="pl-k">function</span><span class="pl-kos">(</span><span class="pl-s1">module</span><span class="pl-kos">,</span> <span class="pl-s1">exports</span><span class="pl-kos">)</span> <span class="pl-kos">{</span> <span class="pl-c">/* Module A 的代码 */</span> <span class="pl-kos">}</span><span class="pl-kos">,</span>
+<span class="pl-c">/* 2 */</span> <span class="pl-k">function</span><span class="pl-kos">(</span><span class="pl-s1">module</span><span class="pl-kos">,</span> <span class="pl-s1">exports</span><span class="pl-kos">)</span> <span class="pl-kos">{</span> <span class="pl-c">/* Module B 的代码 */</span> <span class="pl-kos">}</span>
+<span class="pl-c">/******/</span> <span class="pl-kos">]</span><span class="pl-kos">)</span><span class="pl-kos">;</span>
+
+
+<span class="pl-c">// 第二次构建（只是修改了其他不相关的文件）</span>
+<span class="pl-c">// moduleA.js (ID: 3 ← ID变了!)</span>
+<span class="pl-k">export</span> <span class="pl-k">const</span> <span class="pl-v">A</span> <span class="pl-c1">=</span> <span class="pl-s">'Module A'</span><span class="pl-kos">;</span> <span class="pl-c">// 内容完全一样</span>
+
+<span class="pl-c">// moduleB.js (ID: 4 ← ID也变了!)</span>
+<span class="pl-k">export</span> <span class="pl-k">const</span> <span class="pl-v">B</span> <span class="pl-c1">=</span> <span class="pl-s">'Module B'</span><span class="pl-kos">;</span> <span class="pl-c">// 内容完全一样</span>
+
+<span class="pl-c">// 生成的Chunk内容：</span>
+<span class="pl-c">/******/</span> <span class="pl-kos">(</span><span class="pl-kos">[</span>
+<span class="pl-c">/* 0 */</span> <span class="pl-k">function</span><span class="pl-kos">(</span><span class="pl-s1">module</span><span class="pl-kos">,</span> <span class="pl-s1">exports</span><span class="pl-kos">,</span> <span class="pl-s1">__webpack_require__</span><span class="pl-kos">)</span> <span class="pl-kos">{</span> <span class="pl-c">/* 入口模块 */</span> <span class="pl-kos">}</span><span class="pl-kos">,</span>
+<span class="pl-c">/* 3 */</span> <span class="pl-k">function</span><span class="pl-kos">(</span><span class="pl-s1">module</span><span class="pl-kos">,</span> <span class="pl-s1">exports</span><span class="pl-kos">)</span> <span class="pl-kos">{</span> <span class="pl-c">/* Module A 的代码 */</span> <span class="pl-kos">}</span><span class="pl-kos">,</span> <span class="pl-c">// ID从1变成3</span>
+<span class="pl-c">/* 4 */</span> <span class="pl-k">function</span><span class="pl-kos">(</span><span class="pl-s1">module</span><span class="pl-kos">,</span> <span class="pl-s1">exports</span><span class="pl-kos">)</span> <span class="pl-kos">{</span> <span class="pl-c">/* Module B 的代码 */</span> <span class="pl-kos">}</span>  <span class="pl-c">// ID从2变成4</span>
+<span class="pl-c">/******/</span> <span class="pl-kos">]</span><span class="pl-kos">)</span><span class="pl-kos">;</span></pre></div>
+<p>虽然模块内容完全没变，但由于模块ID从 [1, 2] 变成了 [3, 4]，Chunk的最终内容发生了变化，所以 chunkhash 也会改变。</p>
+<p>解决方案：</p>
+<div class="highlight highlight-source-js"><pre class="notranslate">optimization: <span class="pl-kos">{</span>
+	<span class="pl-c1">moduleIds</span>: <span class="pl-s">'deterministic'</span><span class="pl-kos">,</span> <span class="pl-c">// Webpack 4+</span>
+	<span class="pl-c">// 或</span>
+	<span class="pl-c1">chunkIds</span>: <span class="pl-s">'deterministic'</span><span class="pl-kos">,</span>
+<span class="pl-kos">}</span></pre></div>
+<ul>
+<li>Webpack 运行时代码<br>
+运行时代码变化会影响所有包含它的 Chunk 的 hash。<br>
+早期 Webpack 中，运行时代码包含了所有 Chunk 的模块信息表。当你修改业务代码时：
+<ul>
+<li>
+<p>业务模块的 ID 或依赖关系可能发生变化</p>
+</li>
+<li>
+<p>运行时代码中的模块信息表随之更新</p>
+</li>
+<li>
+<p>由于运行时代码嵌在 main Chunk 中，它的内容变化导致 hash 变化</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>可以通过提取 runtime 来解决：</p>
+<div class="highlight highlight-source-js"><pre class="notranslate">optimization: <span class="pl-kos">{</span>
+	<span class="pl-c1">runtimeChunk</span>: <span class="pl-kos">{</span>
+	<span class="pl-c1">name</span>: <span class="pl-s">'runtime'</span><span class="pl-kos">,</span>
+	<span class="pl-kos">}</span><span class="pl-kos">,</span>
+<span class="pl-kos">}</span></pre></div>
+<ul>
+<li>Hash 长度</li>
+</ul>
+<div class="highlight highlight-source-js"><pre class="notranslate">filename: <span class="pl-s">'[name].[chunkhash:8].js'</span> <span class="pl-c">// 只使用前8位，平衡可读性与唯一性</span></pre></div></div>
 <div style="font-size:small;margin-top:8px;float:right;"></div>
 
 <button class="btn btn-block" type="button" onclick="openComments()" id="cmButton">评论</button>
