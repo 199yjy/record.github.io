@@ -1,5 +1,397 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0"><channel><title>yjieyan的私人博客</title><link>https://199yjy.github.io/record.github.io</link><description>记录</description><copyright>yjieyan的私人博客</copyright><docs>http://www.rssboard.org/rss-specification</docs><generator>python-feedgen</generator><image><url>https://avatars.githubusercontent.com/u/35625289?v=4</url><title>avatar</title><link>https://199yjy.github.io/record.github.io</link></image><lastBuildDate>Mon, 13 Oct 2025 00:42:23 +0000</lastBuildDate><managingEditor>yjieyan的私人博客</managingEditor><ttl>60</ttl><webMaster>yjieyan的私人博客</webMaster><item><title>【JS】防抖、节流</title><link>https://199yjy.github.io/record.github.io/post/%E3%80%90JS%E3%80%91-fang-dou-%E3%80%81-jie-liu.html</link><description>防抖、节流都是用来控制高频率触发事件的执行次数的，但它们的适用场景和核心思想不同。</description><guid isPermaLink="true">https://199yjy.github.io/record.github.io/post/%E3%80%90JS%E3%80%91-fang-dou-%E3%80%81-jie-liu.html</guid><pubDate>Mon, 13 Oct 2025 00:41:54 +0000</pubDate></item><item><title>【登录鉴权】单点登录</title><link>https://199yjy.github.io/record.github.io/post/%E3%80%90-deng-lu-jian-quan-%E3%80%91-dan-dian-deng-lu.html</link><description>核心机制：本质是 “一处登录，处处通行”。</description><guid isPermaLink="true">https://199yjy.github.io/record.github.io/post/%E3%80%90-deng-lu-jian-quan-%E3%80%91-dan-dian-deng-lu.html</guid><pubDate>Sun, 12 Oct 2025 12:47:32 +0000</pubDate></item><item><title>【登录鉴权】常见的登录鉴权⽅式</title><link>https://199yjy.github.io/record.github.io/post/%E3%80%90-deng-lu-jian-quan-%E3%80%91-chang-jian-de-deng-lu-jian-quan-%E2%BD%85-shi.html</link><description>- 基于Session Cookie的鉴权
+<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0"><channel><title>yjieyan的私人博客</title><link>https://199yjy.github.io/record.github.io</link><description>记录</description><copyright>yjieyan的私人博客</copyright><docs>http://www.rssboard.org/rss-specification</docs><generator>python-feedgen</generator><image><url>https://avatars.githubusercontent.com/u/35625289?v=4</url><title>avatar</title><link>https://199yjy.github.io/record.github.io</link></image><lastBuildDate>Mon, 13 Oct 2025 00:49:31 +0000</lastBuildDate><managingEditor>yjieyan的私人博客</managingEditor><ttl>60</ttl><webMaster>yjieyan的私人博客</webMaster><item><title>【JS】防抖、节流</title><link>https://199yjy.github.io/record.github.io/post/%E3%80%90JS%E3%80%91-fang-dou-%E3%80%81-jie-liu.html</link><description>防抖、节流都是用来控制高频率触发事件的执行次数的，但它们的适用场景和核心思想不同。</description><guid isPermaLink="true">https://199yjy.github.io/record.github.io/post/%E3%80%90JS%E3%80%91-fang-dou-%E3%80%81-jie-liu.html</guid><pubDate>Mon, 13 Oct 2025 00:41:54 +0000</pubDate></item><item><title>【工程化】从零到一搭建 Vue3 单页面应用</title><link>https://199yjy.github.io/record.github.io/post/%E3%80%90-gong-cheng-hua-%E3%80%91-cong-ling-dao-yi-da-jian-%20Vue3%20-dan-ye-mian-ying-yong.html</link><description>| 插件 | 功能 | 
+|-------|-------|
+| vue3 |  | 
+| ts |  |
+| pinia | 状态管理 |
+| vue-router |  |
+| vue-i18n |  |
+| element-plus | UI框架 |
+| axios |  |
+| eslint | 规范 |
+| less | css处理器 |
+| commitlint | git提交规范|
+| husky | git钩子触发器 |
+
+## 初始化框架
+### 安裝vue
+```js 
+npm init vue@latest
+```
+### 初始化
+```js vite.config.ts
+import { fileURLToPath, URL } from 'node:url';
+
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
+// 如果编辑器提示 path 模块找不到，则可以安装一下 @types/node -&gt; npm i @types/node -D
+import path from 'path';
+// https://vitejs.dev/config/
+export default defineConfig({
+  // 需要用到的插件数组
+  plugins: [vue()],
+  // 解析
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
+  // 开发或生产环境服务的公共基础路径
+  base: './',
+  // 服务器选项
+  server: {
+    // 指定开发服务器端口
+    port: 4000,
+    // 在开发服务器启动时自动在浏览器中打开应用程序
+    open: true,
+    // 为开发服务器配置 CORS
+    cors: true,
+  },
+});
+```
+### 初始化目录
+```js
+├─ .vscode
+│  └─ extensions.json
+├─ bulid			# 打包配置模块
+├─ public			# 公共资源模块
+│  └─ favicon.ico
+├─ src
+│  ├─ api			# 接口管理模块
+│  ├─ assets		# 静态资源模块
+│  │  └─ logo.png
+│  ├─ common		# 自定义通用模块
+│  ├─ components	# 公共组件模块
+│  │  └─ HelloWorld.vue
+│  ├─ layouts		# 公共自定义布局
+│  ├─ router		# 路由
+│  ├─ stores		# pinia状态库
+│  ├─ style			# 样式资源模块
+│  ├─ utils			# 公共方法模块
+│  ├─ views			# 视图模块
+│  ├─ App.vue
+│  ├─ env.d.ts
+│  └─ main.ts		# 入口文件
+├─ tests
+├─ types			# 声明文件
+├─ .gitignore
+├─ index.html
+├─ package-lock.json
+├─ package.json
+├─ README.md
+├─ tsconfig.json
+└─ vite.config.ts
+
+```
+## 初始化路由
+### 安装路由
+```js
+npm install vue-router
+```
+### 配置路由文件
+### 挂载路由
+```js
+import { createApp } from 'vue';
+import App from './App.vue';
+import router from '@/router/index';
+
+const app = createApp(App);
+
+app.use(router);
+
+app.mount('#app');
+```
+## 初始化状态
+### 安装pinia
+```js
+npm install pinia
+
+```
+### 配置状态仓库
+```js index.ts
+import type { App } from 'vue';
+import { createPinia } from 'pinia';
+
+const store = createPinia();
+
+export function setupStore(app: App&lt;Element&gt;) {
+  app.use(store);
+}
+
+export { store };
+
+```
+```js userStore.ts
+import { store } from '@/store';
+import { defineStore } from 'pinia';
+
+export const useUserStore = defineStore({
+  id: 'userStore',
+  state: () =&gt; ({}),
+  getters: {},
+  actions: {},  
+});
+
+export function useUserStoreHook() {
+  return useUserStore(store);
+}
+```
+### 挂载
+```js
+import { createApp } from 'vue';
+import App from './App.vue';
+import { setupStore } from '@/store';
+
+const app = createApp(App);
+
+// 配置状态仓库
+setupStore(app);
+
+app.mount('#app');
+
+```
+## 集成element-plus组件库
+### 安装
+```js
+npm install element-plus --save
+
+```
+### 选择导入方式
+- 完全导入
+```
+import type { App } from 'vue';
+
+/**
+ * 完整导入 element-plus 组件
+ * @param app {App}
+ */
+import ElementPlus from 'element-plus';
+import 'element-plus/dist/index.css';
+import '@/style/element-plus.css';
+import Modal from '@/components/Dialog';
+
+/**
+ * 完整导入 element-plus 图标
+ * @param app {App}
+ */
+import * as ElementPlusIconsVue from '@element-plus/icons-vue';
+
+export default function fullLoadEl(app: App, params: Object) {
+  app.use(ElementPlus, params);
+  for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+    app.component(key, component);
+  }
+  Modal._context = app._context;
+  return app;
+}
+```
+- 按需导入
+```js
+import type { App } from 'vue';
+
+/**
+ * 按需导入 element-plus 组件
+ * @param app {App}
+ */
+import 'element-plus/dist/index.css';
+import { ElIcon, ElButton, ElInput, ElCheckbox } from 'element-plus';
+import '@/style/element-plus.css';
+
+/**
+ * 按需导入 element-plus 图标
+ * @param app {App}
+ */
+import { Edit, Tools, Location, Setting } from '@element-plus/icons-vue';
+
+export default function loadOnDemandEl(app: App) {
+  [ElButton, ElIcon, ElInput, ElCheckbox].forEach((v) =&gt; {
+    app.use(v);
+  });
+  [Edit, Tools, Location, Setting].forEach((v) =&gt; {
+    app.component(v.name, v);
+  });
+  return app;
+}
+```
+
+### 加载
+```js
+import { createApp } from 'vue';
+import App from './App.vue';
+import fullLoadEl from '@/packages/element-plus/fullLoadEl ';
+
+const app = createApp(App);
+
+// 全局引入
+fullLoadEl(app);
+
+app.mount('#app');
+```
+## 集成axios
+### 安装axios
+```js
+npm install axios
+```
+### 二次封装axios
+参考vben-admin对axios的封装
+调用封装的axios类VAxios，传自设参数和项目预设参数的合并对象为参数，生成VAxios实例对象
+```js
+import type { AxiosResponse } from 'axios';
+import type { RequestOptions, Result } from './types/axios';
+/*
+  export type ErrorMessageMode = 'none' | 'modal' | 'message' | undefined;
+  export type SuccessMessageMode = 'none' | 'message';
+
+  export interface RequestOptions {
+    // Format request parameter time
+    formatDate?: boolean;
+    // Whether to process the request result
+    isTransformResponse?: boolean;
+    // Whether to return native response headers
+    // For example: use this attribute when you need to get the response headers
+    isReturnNativeResponse?: boolean;
+    // Error message prompt type
+    errorMessageMode?: ErrorMessageMode;
+    // Successful request message prompt
+    successMessageMode?: SuccessMessageMode;
+    // Whether to add a timestamp
+    joinTime?: boolean;
+    ignoreCancelToken?: boolean;
+    // Whether to send token in header
+    withToken?: boolean;
+    // 请求重试机制
+    retryRequest?: RetryRequest;
+  }
+
+  export interface Result&lt;T = any&gt; {
+    code: number | string;
+    type: 'success' | 'error' | 'warning';
+    msg: string;
+    data: T;
+  }
+
+  // multipart/form-data: upload file
+  export interface UploadFileParams {
+    // Other parameters
+    data?: Recordable;
+    // File parameter interface field name
+    name?: string;
+    // file name
+    file: File | Blob;
+    // file name
+    filename?: string;
+    [key: string]: any;
+  }
+*/
+import type { AxiosTransform, CreateAxiosOptions } from '@/packages/http/axios/axiosTransform';
+import axios from 'axios';
+import { clone } from 'lodash-es';
+import { VAxios } from '@/packages/http/axios/Axios';
+import { checkStatus } from '@/packages/http/axios/checkStatus';
+import { AxiosRetry } from '@/packages/http/axios/axiosRetry';
+import { joinTimestamp, formatRequestDate } from '@/packages/http/axios/helper';
+import { RequestEnum, ResultEnum, ContentTypeEnum } from '@/enums/httpEnum';
+/*
+
+  // @description: Request result set
+  export enum ResultEnum {
+    SUCCESS = 200,
+    ERROR = -1,
+    TIMEOUT = 401,
+    TYPE = 'success',
+  }
+
+  // @description: request method
+  export enum RequestEnum {
+    GET = 'GET',
+    POST = 'POST',
+    PUT = 'PUT',
+    DELETE = 'DELETE',
+  }
+
+  // @description:  contentType
+  export enum ContentTypeEnum {
+    // json
+    JSON = 'application/json;charset=UTF-8',
+    // form-data qs
+    FORM_URLENCODED = 'application/x-www-form-urlencoded;charset=UTF-8',
+    // form-data  upload
+    FORM_DATA = 'multipart/form-data;charset=UTF-8',
+  }
+*/
+import { deepMerge } from '@/utils';
+/*
+  export function deepMerge&lt;T = any&gt;(src: any = {}, target: any = {}): T {
+    let key: string;
+    for (key in target) {
+      src[key] = isObject(src[key]) ? deepMerge(src[key], target[key]) : (src[key] = target[key]);
+    }
+    return src;
+  }
+*/
+import { getAppEnvConfig } from '@/utils/env';
+/* 
+  // build/getConfigFileName.ts
+  export const getConfigFileName = (env: Record&lt;string, any&gt;) =&gt; {
+    return `__PRODUCTION__${env.VITE_GLOB_APP_SHORT_NAME || '__APP'}__CONF__`
+      .toUpperCase()
+      .replace(/\s/g, '');
+  };
+
+  export function getAppEnvConfig() {
+    const ENV_NAME = getConfigFileName(import.meta.env);
+      
+    const ENV = (import.meta.env.DEV
+      ? // Get the global configuration (the configuration will be extracted independently when packaging)
+        (import.meta.env as unknown as GlobEnvConfig)
+      : window[ENV_NAME as any]) as unknown as GlobEnvConfig;
+
+    const { VITE_GLOB_API_URL } = ENV;
+
+    return {
+      VITE_GLOB_API_URL,
+    };
+ }
+*/
+import { removeToken，getToken } from '@/utils/token';
+/*
+  import Cookies from 'js-cookie';
+
+  const TokenKey = 'Token';
+
+  export function getToken() {
+    return Cookies.get(TokenKey);
+  }
+
+  export function setToken(token: string) {
+    return Cookies.set(TokenKey, token);
+  }
+
+  export function removeToken() {
+    return Cookies.remove(TokenKey);
+  }
+*/
+import { isString } from '@/utils/is';
+/*
+  const toString = Object.prototype.toString;
+
+  export function is(val: unknown, type: string) {
+    return toString.call(val) === `[object ${type}]`;
+  }
+  
+  export function isString(val: unknown): val is string {
+    return is(val, 'String');
+  }
+*/
+import { useUserStoreWithOut } from '$store/user';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { s } from '$locale';
+
+const { VITE_GLOB_API_URL } = getAppEnvConfig();
+
+const transform: AxiosTransform = {
+  /**
+   * @description: 处理响应数据。</description><guid isPermaLink="true">https://199yjy.github.io/record.github.io/post/%E3%80%90-gong-cheng-hua-%E3%80%91-cong-ling-dao-yi-da-jian-%20Vue3%20-dan-ye-mian-ying-yong.html</guid><pubDate>Sun, 12 Oct 2025 15:40:41 +0000</pubDate></item><item><title>【登录鉴权】单点登录</title><link>https://199yjy.github.io/record.github.io/post/%E3%80%90-deng-lu-jian-quan-%E3%80%91-dan-dian-deng-lu.html</link><description>核心机制：本质是 “一处登录，处处通行”。</description><guid isPermaLink="true">https://199yjy.github.io/record.github.io/post/%E3%80%90-deng-lu-jian-quan-%E3%80%91-dan-dian-deng-lu.html</guid><pubDate>Sun, 12 Oct 2025 12:47:32 +0000</pubDate></item><item><title>【登录鉴权】常见的登录鉴权⽅式</title><link>https://199yjy.github.io/record.github.io/post/%E3%80%90-deng-lu-jian-quan-%E3%80%91-chang-jian-de-deng-lu-jian-quan-%E2%BD%85-shi.html</link><description>- 基于Session Cookie的鉴权
     - cookie: ⽤户在登录成功后，服务器会⽣成⼀个包含⽤户信息的Cookie，并返回给前端。</description><guid isPermaLink="true">https://199yjy.github.io/record.github.io/post/%E3%80%90-deng-lu-jian-quan-%E3%80%91-chang-jian-de-deng-lu-jian-quan-%E2%BD%85-shi.html</guid><pubDate>Sun, 12 Oct 2025 09:11:52 +0000</pubDate></item><item><title>【异步】手写Promise</title><link>https://199yjy.github.io/record.github.io/post/%E3%80%90-yi-bu-%E3%80%91-shou-xie-Promise.html</link><description># Promise
 
 Promise特点：
