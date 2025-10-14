@@ -1,5 +1,172 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0"><channel><title>yjieyan的私人博客</title><link>https://199yjy.github.io/record.github.io</link><description>记录</description><copyright>yjieyan的私人博客</copyright><docs>http://www.rssboard.org/rss-specification</docs><generator>python-feedgen</generator><image><url>https://avatars.githubusercontent.com/u/35625289?v=4</url><title>avatar</title><link>https://199yjy.github.io/record.github.io</link></image><lastBuildDate>Tue, 14 Oct 2025 08:19:16 +0000</lastBuildDate><managingEditor>yjieyan的私人博客</managingEditor><ttl>60</ttl><webMaster>yjieyan的私人博客</webMaster><item><title>【webpack】webpack工作原理</title><link>https://199yjy.github.io/record.github.io/post/%E3%80%90webpack%E3%80%91webpack-gong-zuo-yuan-li.html</link><description>Webpack的编译过程就像一条精心设计的流水线，把我们的源代码一步步转化为最终可运行的代码。</description><guid isPermaLink="true">https://199yjy.github.io/record.github.io/post/%E3%80%90webpack%E3%80%91webpack-gong-zuo-yuan-li.html</guid><pubDate>Mon, 13 Oct 2025 14:38:14 +0000</pubDate></item><item><title>【JS】防抖、节流</title><link>https://199yjy.github.io/record.github.io/post/%E3%80%90JS%E3%80%91-fang-dou-%E3%80%81-jie-liu.html</link><description>防抖、节流都是用来控制高频率触发事件的执行次数的，但它们的适用场景和核心思想不同。</description><guid isPermaLink="true">https://199yjy.github.io/record.github.io/post/%E3%80%90JS%E3%80%91-fang-dou-%E3%80%81-jie-liu.html</guid><pubDate>Mon, 13 Oct 2025 00:41:54 +0000</pubDate></item><item><title>【工程化】从零到一搭建 Vue3 单页面应用1</title><link>https://199yjy.github.io/record.github.io/post/%E3%80%90-gong-cheng-hua-%E3%80%91-cong-ling-dao-yi-da-jian-%20Vue3%20-dan-ye-mian-ying-yong-1.html</link><description>| 插件 | 功能 | 
+<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0"><channel><title>yjieyan的私人博客</title><link>https://199yjy.github.io/record.github.io</link><description>记录</description><copyright>yjieyan的私人博客</copyright><docs>http://www.rssboard.org/rss-specification</docs><generator>python-feedgen</generator><image><url>https://avatars.githubusercontent.com/u/35625289?v=4</url><title>avatar</title><link>https://199yjy.github.io/record.github.io</link></image><lastBuildDate>Tue, 14 Oct 2025 08:21:17 +0000</lastBuildDate><managingEditor>yjieyan的私人博客</managingEditor><ttl>60</ttl><webMaster>yjieyan的私人博客</webMaster><item><title>【工程化】从零到一搭建 Vue3 单页面应用2</title><link>https://199yjy.github.io/record.github.io/post/%E3%80%90-gong-cheng-hua-%E3%80%91-cong-ling-dao-yi-da-jian-%20Vue3%20-dan-ye-mian-ying-yong-2.html</link><description>## 实现前端自动化部署
+
+实现思路：在`git push`命令设置一个钩子函数，即`/.husky/pre-push`，获取当前分支，依据当前分支执行对应的`npm 脚本`，先进行项目打包构建，再用`ftp-deploy`库推送打包后的文件到指定的服务器，最后才将项目上传到远程仓库
+
+1. 利用`ftp-deploy`库，实现上传函数
+
+   - `/deploy/index.ts`——上传函数
+
+     ```ts
+     const FtpDeploy = require('ftp-deploy');
+     const ftpDeploy = new FtpDeploy();
+     const DeployConfig = require('./config.ts')
+     
+     const config = DeployConfig.getFtpDeployConfig()
+     
+     ftpDeploy
+       .deploy(config)
+       .then((res) =&gt; console.log('finished:', res))
+       .catch((err) =&gt; console.log(err));
+     ```
+
+   - `/deploy/config.ts`——上传配置
+
+     ```ts
+     const deployConfig = require('./serverConfig.ts')
+     
+     const getNODE_ENV = function() {
+       const script = process.env.npm_lifecycle_script;
+       const reg = new RegExp('NODE_ENV=([a-z_\\d]+)');
+       const result = reg.exec(script);
+       return result[1]
+     }
+     
+     module.exports.getFtpDeployConfig = function getFtpDeployConfig() {
+       return {
+         user: deployConfig.user,                    // 服务器登录账号
+         password: deployConfig.password,            // 服务器密码
+         host: deployConfig.host,                    // 服务器地址
+         port: deployConfig.port.get(getNODE_ENV()), // ftp的服务器端口
+         localRoot: deployConfig.localRoot,          // 上传的文件
+         remoteRoot: '',                             // 远程服务器文件存储路径
+         include: ['.*'],                            // 这将上传除了点文件之外的所有文件
+         // 排除sourcemaps和node_modules中的所有文件
+         exclude: [
+             'dist/**/*.map',
+             'node_modules/**',
+             'node_modules/**/.*',
+             '.git/**',
+         ],
+         deleteRemote: false,                         // 如果为true，则在上传前删除目的地的所有现有文件
+         forcePasv: true,                             // 主动模式/被动模式
+         sftp: false,                                 // 使用 sftp协议 或 ftp协议
+       }
+     }
+     ```
+
+   - `/deploy/serverConfig.ts`——个人服务器配置，不上传到远程仓库，保障个人服务器安全
+
+     ```ts
+     module.exports = {
+       user: 'user',
+       password: 'password',
+       host: 'ftp.someserver.com',
+       port: new Map([
+         ['test', 8080],
+         ['production', 80]
+       ]),
+       localRoot: __dirname + '/dist',
+     }
+     ```
+
+2. 设置`npm`脚本命令
+
+   - 安装`cross-env`
+
+     ```shell
+     npm i cross-env -D
+     ```
+
+   - 修改`package.json`
+
+     ```json
+     {
+       'scripts': {
+         'deploy:test': 'cross-env NODE_ENV=test run-p build &amp;&amp; node ./deploy/index.ts',
+         'deploy:prod': 'cross-env NODE_ENV=production run-p build &amp;&amp; node ./deploy/index.ts',
+       },
+     }
+     ```
+
+3. 实现`git-push`钩子函数——`/.husky/pre-push`
+
+   ```shell
+   #!/bin/sh
+   . '$(dirname '$0')/_/husky.sh'
+   
+   # 代码推送前依据当前分支进行打包构建并上传（仅对 master 分支 和 test 分支进行构建）
+   function current_branch() {
+     branch=''
+     testBranch='test'
+     masterBranch='master'
+     cd $PWD
+     if [ -d '.git' ]; then
+       output=`sh -c 'git branch --no-color 2&gt; /dev/null' | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/' -e 's/\//\_/g'`
+       if [ '$output' ]; then
+         branch='${output}'
+       fi
+     fi
+   
+     if [ $branch == $testBranch ]
+     then
+       echo '自动构建并上传 test 分支代码'
+       npm run deploy:test
+     elif [ $branch == $masterBranch ]
+     then
+       echo '自动构建并上传 master 分支代码'
+       npm run deploy:prod
+     fi
+   }
+   
+   current_branch
+   ```
+
+# 框架配置管理
+
+## 项目`TypeScript`配置 `tsconfig.ts`
+
+```js
+{
+  'compileOnSave': true, //设置保存文件的时候自动编译
+  'extends': '@vue/tsconfig/tsconfig.web.json', //引入其他配置文件，继承配置
+  'exclude': ['node_modules', 'dist'], //指定编译器需要排除的文件或文件夹
+  'include': [
+    //指定编译需要编译的文件或目录
+    'src/**/*.ts',
+    'src/**/*.d.ts',
+    'src/**/*.vue',
+    'types/**/*.d.ts',
+    'types/**/*.ts',
+    'build/**/*.ts',
+    'build/**/*.d.ts',
+    'vite.config.*'
+  ],
+  'compilerOptions': {
+    //配置编译选项
+    'diagnostics': true, // 打印诊断信息
+    'removeComments': true, //移除代码中注释
+    'strictNullChecks': true, //开启null、undefined检测
+    'baseUrl': '.', // 解析非相对模块的基地址，默认是当前目录
+    'target': 'ES2015', // 目标语言的版本
+    'moduleResolution': 'node', // 模块解析策略，ts默认用node的解析策略，即相对的方式导入
+    'allowJs': false, // 允许编译器编译JS，JSX文件
+    'checkJs': false, // 允许在JS文件中报错，通常与allowJS一起使用
+    'sourceMap': true, // 生成目标文件的sourceMap文件
+    'strict': true, // 开启所有严格的类型检查
+    'noUnusedLocals': true, // 检查只声明、未使用的局部变量(只提示不报错)
+    'noUnusedParameters': true, // 检查未使用的函数参数(只提示不报错)
+    'esModuleInterop': true, // 允许export=导出，由import from 导入
+    'paths': {
+      // 路径映射，相对于baseUrl
+      '@/*': ['./src/*'],
+      '#/*': ['./types/*'],
+      '$locale': ['./src/locales/setupLocale.ts'],
+      '$store/*': ['./src/store/modules/*'],
+    },
+    'suppressImplicitAnyIndexErrors': true,
+    'jsx': 'preserve',
+    'types': ['node', 'vite/client']  //默认所有可见的”@types“包会在编译过程中被包含进来。</description><guid isPermaLink="true">https://199yjy.github.io/record.github.io/post/%E3%80%90-gong-cheng-hua-%E3%80%91-cong-ling-dao-yi-da-jian-%20Vue3%20-dan-ye-mian-ying-yong-2.html</guid><pubDate>Tue, 14 Oct 2025 08:20:44 +0000</pubDate></item><item><title>【webpack】webpack工作原理</title><link>https://199yjy.github.io/record.github.io/post/%E3%80%90webpack%E3%80%91webpack-gong-zuo-yuan-li.html</link><description>Webpack的编译过程就像一条精心设计的流水线，把我们的源代码一步步转化为最终可运行的代码。</description><guid isPermaLink="true">https://199yjy.github.io/record.github.io/post/%E3%80%90webpack%E3%80%91webpack-gong-zuo-yuan-li.html</guid><pubDate>Mon, 13 Oct 2025 14:38:14 +0000</pubDate></item><item><title>【JS】防抖、节流</title><link>https://199yjy.github.io/record.github.io/post/%E3%80%90JS%E3%80%91-fang-dou-%E3%80%81-jie-liu.html</link><description>防抖、节流都是用来控制高频率触发事件的执行次数的，但它们的适用场景和核心思想不同。</description><guid isPermaLink="true">https://199yjy.github.io/record.github.io/post/%E3%80%90JS%E3%80%91-fang-dou-%E3%80%81-jie-liu.html</guid><pubDate>Mon, 13 Oct 2025 00:41:54 +0000</pubDate></item><item><title>【工程化】从零到一搭建 Vue3 单页面应用1</title><link>https://199yjy.github.io/record.github.io/post/%E3%80%90-gong-cheng-hua-%E3%80%91-cong-ling-dao-yi-da-jian-%20Vue3%20-dan-ye-mian-ying-yong-1.html</link><description>| 插件 | 功能 | 
 |-------|-------|
 | vue3 |  | 
 | ts |  |
