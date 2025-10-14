@@ -341,7 +341,8 @@ Chunk 形成规则：</p>
 </tbody>
 </table></markdown-accessiblity-table>
 <h2>其他</h2>
-<h3>chunk hash有什么用</h3>
+<h3>chunk hash的作用</h3>
+<p>chunk hash 的主要作用是实现浏览器缓存优化，提升用户体验和加载性能。</p>
 <p>缓存效果：</p>
 <ul>
 <li>只修改业务代码 → 只有 main.a1b2c3d4.js 变为 main.m3n4o5p6.js</li>
@@ -414,7 +415,126 @@ Chunk 形成规则：</p>
 <ul>
 <li>Hash 长度</li>
 </ul>
-<div class="highlight highlight-source-js"><pre class="notranslate">filename: <span class="pl-s">'[name].[chunkhash:8].js'</span> <span class="pl-c">// 只使用前8位，平衡可读性与唯一性</span></pre></div></div>
+<div class="highlight highlight-source-js"><pre class="notranslate">filename: <span class="pl-s">'[name].[chunkhash:8].js'</span> <span class="pl-c">// 只使用前8位，平衡可读性与唯一性</span></pre></div>
+<h3>减少代码体积方案</h3>
+<h4>tree shaking</h4>
+<p>基于 ES6 模块的静态结构特性（即模块依赖关系在编译时确定，不依赖运行时）。</p>
+<p>前提条件：</p>
+<ul>
+<li>模块必须是 ES6 模块，CommonJS（require/module.exports）不支持，因为其依赖关系是动态的</li>
+<li>代码必须是无副作用的：如果某个导出函数或模块有副作用（如修改全局变量、发起 API 请求），Webpack 无法安全删除它</li>
+<li>必须在生产模式（mode: 'production'）下启用，开发模式只标记，避免破坏sourceMap</li>
+</ul>
+<p>步骤：</p>
+<ol>
+<li>静态分析：Webpack 解析模块时，通过 AST（抽象语法树）分析哪些导出被其他模块实际引用</li>
+</ol>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-c">// utils.js</span>
+<span class="pl-k">export</span> <span class="pl-k">const</span> <span class="pl-en">add</span> <span class="pl-c1">=</span> <span class="pl-kos">(</span><span class="pl-s1">a</span><span class="pl-kos">,</span> <span class="pl-s1">b</span><span class="pl-kos">)</span> <span class="pl-c1">=&gt;</span> <span class="pl-s1">a</span> <span class="pl-c1">+</span> <span class="pl-s1">b</span><span class="pl-kos">;</span>
+<span class="pl-k">export</span> <span class="pl-k">const</span> <span class="pl-en">subtract</span> <span class="pl-c1">=</span> <span class="pl-kos">(</span><span class="pl-s1">a</span><span class="pl-kos">,</span> <span class="pl-s1">b</span><span class="pl-kos">)</span> <span class="pl-c1">=&gt;</span> <span class="pl-s1">a</span> <span class="pl-c1">-</span> <span class="pl-s1">b</span><span class="pl-kos">;</span>
+
+<span class="pl-c">// main.js</span>
+<span class="pl-k">import</span> <span class="pl-kos">{</span> <span class="pl-en">add</span> <span class="pl-kos">}</span> <span class="pl-k">from</span> <span class="pl-s">'./utils.js'</span><span class="pl-kos">;</span> <span class="pl-c">// 只引用了 add</span></pre></div>
+<p>Webpack 会识别到 subtract 未被引用。</p>
+<ol start="2">
+<li>标记未使用导出：未被引用的导出会被标记为 "dead code"</li>
+<li>压缩阶段移除：在压缩代码（如使用 Terser 插件）时，这些标记的代码会被彻底删除</li>
+</ol>
+<p>配置：</p>
+<ul>
+<li>启用生产模式</li>
+</ul>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-c">// webpack.config.js</span>
+<span class="pl-smi">module</span><span class="pl-kos">.</span><span class="pl-c1">exports</span> <span class="pl-c1">=</span> <span class="pl-kos">{</span>
+  <span class="pl-c1">mode</span>: <span class="pl-s">'production'</span><span class="pl-kos">,</span> <span class="pl-c">// 关键配置</span>
+  <span class="pl-c1">optimization</span>: <span class="pl-kos">{</span>
+    <span class="pl-c1">usedExports</span>: <span class="pl-c1">true</span><span class="pl-kos">,</span> <span class="pl-c">// 标记未使用导出</span>
+    <span class="pl-c1">minimize</span>: <span class="pl-c1">true</span><span class="pl-kos">,</span>    <span class="pl-c">// 启用压缩</span>
+  <span class="pl-kos">}</span><span class="pl-kos">,</span>
+<span class="pl-kos">}</span><span class="pl-kos">;</span></pre></div>
+<ul>
+<li>配置 sideEffects</li>
+</ul>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-kos">{</span>
+  <span class="pl-s">"name"</span>: <span class="pl-s">"your-project"</span><span class="pl-kos">,</span>
+  <span class="pl-s">"sideEffects"</span>: <span class="pl-c1">false</span><span class="pl-kos">,</span>  <span class="pl-c">// 所有文件无副作用,可安全删除</span>
+  <span class="pl-c">// 或指定有副作用的文件（如 CSS、全局 JS）</span>
+  <span class="pl-s">"sideEffects"</span>: <span class="pl-kos">[</span>
+    <span class="pl-s">"*.css"</span><span class="pl-kos">,</span>             <span class="pl-c">// 避免 CSS 被误删</span>
+    <span class="pl-s">"src/globals.js"</span>     <span class="pl-c">// 避免全局副作用文件被误删</span>
+  <span class="pl-kos">]</span>
+<span class="pl-kos">}</span></pre></div>
+<ul>
+<li>Babel 配置：避免破坏 ESM 结构​<br>
+确保 Babel 不将 ESM 转为 CommonJS，默认行为会破坏 Tree Shaking</li>
+<li>​第三方库的优化引入<br>
+优先选择 ESM 版本，按需导入子模块</li>
+<li>调试tree shaking</li>
+</ul>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-c">//以 JSON 格式输出详细的打包统计信息 将输出到 stats.json 文件</span>
+<span class="pl-s1">npx</span> <span class="pl-s1">webpack</span> <span class="pl-c1">--</span><span class="pl-s1">mode</span> <span class="pl-s1">production</span> <span class="pl-c1">--</span><span class="pl-s1">stats</span><span class="pl-c1">-</span><span class="pl-s1">json</span> <span class="pl-c1">&gt;</span> <span class="pl-s1">stats</span><span class="pl-kos">.</span><span class="pl-c1">json</span></pre></div>
+<p>生成的 stats.json 文件包含了完整的打包元数据，可以用于：</p>
+<ul>
+<li>可视化分析</li>
+</ul>
+<div class="highlight highlight-source-shell"><pre class="notranslate"><span class="pl-c"><span class="pl-c">#</span> 方法1：使用 webpack-bundle-analyzer</span>
+npx webpack-bundle-analyzer stats.json
+
+<span class="pl-c"><span class="pl-c">#</span> 方法2：使用官方分析工具</span>
+<span class="pl-c"><span class="pl-c">#</span> https://webpack.github.io/analyse/ 上传 stats.json</span></pre></div>
+<ul>
+<li>包含的关键信息</li>
+</ul>
+<div class="highlight highlight-source-json"><pre class="notranslate">{
+  <span class="pl-ent">"version"</span>: <span class="pl-s"><span class="pl-pds">"</span>5.0.0<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"hash"</span>: <span class="pl-s"><span class="pl-pds">"</span>构建哈希值<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"time"</span>: <span class="pl-s"><span class="pl-pds">"</span>构建时间<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"builtAt"</span>: <span class="pl-s"><span class="pl-pds">"</span>构建时间戳<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"publicPath"</span>: <span class="pl-s"><span class="pl-pds">"</span>公共路径<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"outputPath"</span>: <span class="pl-s"><span class="pl-pds">"</span>输出路径<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"assets"</span>: [
+    {
+      <span class="pl-ent">"name"</span>: <span class="pl-s"><span class="pl-pds">"</span>bundle.js<span class="pl-pds">"</span></span>,
+      <span class="pl-ent">"size"</span>: <span class="pl-c1">1024000</span>,
+      <span class="pl-ent">"chunks"</span>: [],
+      <span class="pl-ent">"chunkNames"</span>: []
+    }
+  ],
+  <span class="pl-ent">"chunks"</span>: [
+    {
+      <span class="pl-ent">"id"</span>: <span class="pl-c1">0</span>,
+      <span class="pl-ent">"rendered"</span>: <span class="pl-c1">true</span>,
+      <span class="pl-ent">"initial"</span>: <span class="pl-c1">true</span>,
+      <span class="pl-ent">"entry"</span>: <span class="pl-c1">true</span>,
+      <span class="pl-ent">"size"</span>: <span class="pl-c1">10000</span>,
+      <span class="pl-ent">"names"</span>: [<span class="pl-s"><span class="pl-pds">"</span>main<span class="pl-pds">"</span></span>],
+      <span class="pl-ent">"files"</span>: [<span class="pl-s"><span class="pl-pds">"</span>bundle.js<span class="pl-pds">"</span></span>],
+      <span class="pl-ent">"modules"</span>: [<span class="pl-ii">...</span>]
+    }
+  ],
+  <span class="pl-ent">"modules"</span>: [
+    {
+      <span class="pl-ent">"id"</span>: <span class="pl-s"><span class="pl-pds">"</span>./src/index.js<span class="pl-pds">"</span></span>,
+      <span class="pl-ent">"identifier"</span>: <span class="pl-s"><span class="pl-pds">"</span>...<span class="pl-pds">"</span></span>,
+      <span class="pl-ent">"name"</span>: <span class="pl-s"><span class="pl-pds">"</span>./src/index.js<span class="pl-pds">"</span></span>,
+      <span class="pl-ent">"size"</span>: <span class="pl-c1">1000</span>,
+      <span class="pl-ent">"chunks"</span>: [<span class="pl-c1">0</span>]
+    }
+  ],
+  <span class="pl-ent">"errors"</span>: [],
+  <span class="pl-ent">"warnings"</span>: []
+}</pre></div>
+<h4>延迟加载</h4>
+<ul>
+<li>动态导入：在需要时才加载模块。</li>
+<li>按需加载：将代码分割成多个小块，按需加载。</li>
+</ul>
+<h4>图片和资源优化</h4>
+<ul>
+<li>图片压缩：使用工具如 ImageOptim、TinyPNG 等。</li>
+<li>使用矢量图：如 SVG 格式的图像。</li>
+<li>使用 WebP 格式：比传统的 JPEG 和 PNG 更小</li>
+</ul></div>
 <div style="font-size:small;margin-top:8px;float:right;"></div>
 
 <button class="btn btn-block" type="button" onclick="openComments()" id="cmButton">评论</button>

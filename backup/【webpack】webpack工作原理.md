@@ -182,7 +182,8 @@ dist/
 |主要内容|模块、模块信息|源信息（文件名、源内容）、最终形态|
 
 ## 其他
-### chunk hash有什么用
+### chunk hash的作用
+chunk hash 的主要作用是实现浏览器缓存优化，提升用户体验和加载性能。
 
 缓存效果：
 - 只修改业务代码 → 只有 main.a1b2c3d4.js 变为 main.m3n4o5p6.js
@@ -256,3 +257,121 @@ optimization: {
 ```js
 filename: '[name].[chunkhash:8].js' // 只使用前8位，平衡可读性与唯一性
 ```
+### 减少代码体积方案
+#### tree shaking
+基于 ES6 模块的静态结构特性（即模块依赖关系在编译时确定，不依赖运行时）。
+
+前提条件：
+- 模块必须是 ES6 模块，CommonJS（require/module.exports）不支持，因为其依赖关系是动态的
+- 代码必须是无副作用的：如果某个导出函数或模块有副作用（如修改全局变量、发起 API 请求），Webpack 无法安全删除它
+- 必须在生产模式（mode: 'production'）下启用，开发模式只标记，避免破坏sourceMap
+
+步骤：
+1. 静态分析：Webpack 解析模块时，通过 AST（抽象语法树）分析哪些导出被其他模块实际引用
+```js
+// utils.js
+export const add = (a, b) => a + b;
+export const subtract = (a, b) => a - b;
+
+// main.js
+import { add } from './utils.js'; // 只引用了 add
+```
+Webpack 会识别到 subtract 未被引用。
+
+2. 标记未使用导出：未被引用的导出会被标记为 "dead code"
+3. 压缩阶段移除：在压缩代码（如使用 Terser 插件）时，这些标记的代码会被彻底删除
+
+配置：
+- 启用生产模式
+```js
+// webpack.config.js
+module.exports = {
+  mode: 'production', // 关键配置
+  optimization: {
+    usedExports: true, // 标记未使用导出
+    minimize: true,    // 启用压缩
+  },
+};
+```
+- 配置 sideEffects 
+```js
+{
+  "name": "your-project",
+  "sideEffects": false,  // 所有文件无副作用,可安全删除
+  // 或指定有副作用的文件（如 CSS、全局 JS）
+  "sideEffects": [
+    "*.css",             // 避免 CSS 被误删
+    "src/globals.js"     // 避免全局副作用文件被误删
+  ]
+}
+```  
+- Babel 配置：避免破坏 ESM 结构​
+确保 Babel 不将 ESM 转为 CommonJS，默认行为会破坏 Tree Shaking
+- ​第三方库的优化引入
+优先选择 ESM 版本，按需导入子模块
+- 调试tree shaking
+```js
+//以 JSON 格式输出详细的打包统计信息 将输出到 stats.json 文件
+npx webpack --mode production --stats-json > stats.json
+```
+生成的 stats.json 文件包含了完整的打包元数据，可以用于：
+- 可视化分析
+```bash
+# 方法1：使用 webpack-bundle-analyzer
+npx webpack-bundle-analyzer stats.json
+
+# 方法2：使用官方分析工具
+# https://webpack.github.io/analyse/ 上传 stats.json
+```
+- 包含的关键信息
+```json
+{
+  "version": "5.0.0",
+  "hash": "构建哈希值",
+  "time": "构建时间",
+  "builtAt": "构建时间戳",
+  "publicPath": "公共路径",
+  "outputPath": "输出路径",
+  "assets": [
+    {
+      "name": "bundle.js",
+      "size": 1024000,
+      "chunks": [],
+      "chunkNames": []
+    }
+  ],
+  "chunks": [
+    {
+      "id": 0,
+      "rendered": true,
+      "initial": true,
+      "entry": true,
+      "size": 10000,
+      "names": ["main"],
+      "files": ["bundle.js"],
+      "modules": [...]
+    }
+  ],
+  "modules": [
+    {
+      "id": "./src/index.js",
+      "identifier": "...",
+      "name": "./src/index.js",
+      "size": 1000,
+      "chunks": [0]
+    }
+  ],
+  "errors": [],
+  "warnings": []
+}
+```
+#### 延迟加载
+- 动态导入：在需要时才加载模块。
+- 按需加载：将代码分割成多个小块，按需加载。
+#### 图片和资源优化
+- 图片压缩：使用工具如 ImageOptim、TinyPNG 等。
+- 使用矢量图：如 SVG 格式的图像。
+- 使用 WebP 格式：比传统的 JPEG 和 PNG 更小
+
+
+
