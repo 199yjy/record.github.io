@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html data-color-mode="light" data-dark-theme="dark" data-light-theme="light" lang="zh-CN">
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link href='https://mirrors.sustech.edu.cn/cdnjs/ajax/libs/Primer/21.0.7/primer.css' rel='stylesheet' />
+    
+    <link rel="icon" href="https://avatars.githubusercontent.com/u/35625289?v=4"><script>
+        let theme = localStorage.getItem("meek_theme") || "light";
+        document.documentElement.setAttribute("data-color-mode", theme);
+    </script>
+<meta name="description" content="
+
+## 路由基础
+
+* 路由作用：根据不同的路径映射到不同的视图。">
+<meta property="og:title" content="【vue】vue-router原理">
+<meta property="og:description" content="
+
+## 路由基础
+
+* 路由作用：根据不同的路径映射到不同的视图。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://199yjy.github.io/record.github.io/post/%E3%80%90vue%E3%80%91vue-router-yuan-li.html">
+<meta property="og:image" content="https://avatars.githubusercontent.com/u/35625289?v=4">
+<title>【vue】vue-router原理</title>
+<link href="//unpkg.com/@wooorm/starry-night@2.1.1/style/both.css" rel="stylesheet" />
+
+
+</head>
+<style>
+body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;padding: 45px;font-size: 16px;font-family: sans-serif;line-height: 1.25;}
+#header{display:flex;padding-bottom:8px;border-bottom: 1px solid var(--borderColor-muted, var(--color-border-muted));margin-bottom: 16px;}
+#footer {margin-top:64px; text-align: center;font-size: small;}
+
+</style>
+
+<style>
+.postTitle{margin: auto 0;font-size:40px;font-weight:bold;}
+.title-right{display:flex;margin:auto 0 0 auto;}
+.title-right .circle{padding: 14px 16px;margin-right:8px;}
+#postBody{border-bottom: 1px solid var(--color-border-default);padding-bottom:36px;}
+#postBody hr{height:2px;}
+#cmButton{height:48px;margin-top:48px;}
+#comments{margin-top:64px;}
+.g-emoji{font-size:24px;}
+@media (max-width: 600px) {
+    body {padding: 8px;}
+    .postTitle{font-size:24px;}
+}
+.copy-feedback {
+    display: none;
+    position: absolute;
+    top: 10px;
+    right: 50px;
+    color: var(--color-fg-on-emphasis);
+    background-color: var(--color-fg-muted);
+    border-radius: 3px;
+    padding: 5px 8px;
+    font-size: 12px;
+}
+</style>
+
+
+
+
+<body>
+    <div id="header">
+<h1 class="postTitle">【vue】vue-router原理</h1>
+<div class="title-right">
+    <a href="https://199yjy.github.io/record.github.io" id="buttonHome" class="btn btn-invisible circle" title="首页">
+        <svg class="octicon" width="16" height="16">
+            <path id="pathHome" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+    
+    <a href="https://github.com/199yjy/record.github.io/issues/11" target="_blank" class="btn btn-invisible circle" title="Issue">
+        <svg class="octicon" width="16" height="16">
+            <path id="pathIssue" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+    
+
+    <a class="btn btn-invisible circle" onclick="modeSwitch();" title="切换主题">
+        <svg class="octicon" width="16" height="16" >
+            <path id="themeSwitch" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+
+</div>
+</div>
+    <div id="content">
+<div class="markdown-body" id="postBody"><h2>路由基础</h2>
+<ul>
+<li>
+<p>路由作用：根据不同的路径映射到不同的视图。</p>
+</li>
+<li>
+<p>监听<a href="https://router.vuejs.org/zh/guide/essentials/dynamic-matching.html#%E5%93%8D%E5%BA%94%E8%B7%AF%E7%94%B1%E5%8F%82%E6%95%B0%E7%9A%84%E5%8F%98%E5%8C%96" rel="nofollow">复用组件</a> 路由参数变化：watch (监测变化) <code class="notranslate">$route</code> 对象。</p>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-k">const</span> <span class="pl-v">User</span> <span class="pl-c1">=</span> <span class="pl-kos">{</span>
+  <span class="pl-c1">template</span>: <span class="pl-s">'...'</span><span class="pl-kos">,</span>
+  <span class="pl-c1">watch</span>: <span class="pl-kos">{</span>
+    <span class="pl-en">$route</span><span class="pl-kos">(</span><span class="pl-s1">to</span><span class="pl-kos">,</span> <span class="pl-s1">from</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+      <span class="pl-c">// 对路由变化作出响应...</span>
+    <span class="pl-kos">}</span>
+  <span class="pl-kos">}</span>
+<span class="pl-kos">}</span></pre></div>
+</li>
+<li>
+<p>配置 <code class="notranslate">routes</code> 常用参数：</p>
+<ul>
+<li>路由路径：<code class="notranslate">path</code> 参数。</li>
+<li><a href="https://router.vuejs.org/zh/guide/essentials/dynamic-matching.html#%E5%8A%A8%E6%80%81%E8%B7%AF%E7%94%B1%E5%8C%B9%E9%85%8D" rel="nofollow">动态路由匹配</a>： 一个“路径参数”使用冒号 <code class="notranslate">:</code> 标记。 如：<code class="notranslate"> { path: '/user/:id', component: User }</code></li>
+<li><a href="https://router.vuejs.org/zh/guide/essentials/passing-props.html#%E8%B7%AF%E7%94%B1%E7%BB%84%E4%BB%B6%E4%BC%A0%E5%8F%82" rel="nofollow">路由组件传参</a>：使用 <code class="notranslate">props</code> 将组件和路由解耦。</li>
+<li><a href="https://router.vuejs.org/zh/guide/essentials/named-routes.html#%E5%91%BD%E5%90%8D%E8%B7%AF%E7%94%B1" rel="nofollow">路由命名</a>： <code class="notranslate">name</code> 参数。</li>
+<li>组件： <code class="notranslate">component</code> 参数。</li>
+<li><a href="https://router.vuejs.org/zh/guide/essentials/named-views.html#%E5%B5%8C%E5%A5%97%E5%91%BD%E5%90%8D%E8%A7%86%E5%9B%BE" rel="nofollow">嵌套组件</a>：<code class="notranslate">children</code> 参数。</li>
+<li><a href="https://router.vuejs.org/zh/guide/essentials/redirect-and-alias.html#%E9%87%8D%E5%AE%9A%E5%90%91" rel="nofollow">重定向</a>：<code class="notranslate">redirect</code> 参数。</li>
+<li><a href="https://router.vuejs.org/zh/guide/essentials/redirect-and-alias.html#%E9%87%8D%E5%AE%9A%E5%90%91" rel="nofollow">别名</a>：<code class="notranslate">alias</code> 参数。</li>
+<li><a href="https://router.vuejs.org/zh/guide/advanced/meta.html" rel="nofollow">元信息</a>：<code class="notranslate">meta</code> 参数。</li>
+</ul>
+</li>
+<li>
+<p>内置组件：</p>
+<ul>
+<li>视图切换：<a href="https://router.vuejs.org/zh/api/#router-link" rel="nofollow"><code class="notranslate">&lt;router-link&gt;</code> 组件</a></li>
+<li>视图渲染：<a href="https://router.vuejs.org/zh/api/#aria-current-value" rel="nofollow"><code class="notranslate">&lt;router-view&gt;</code> 组件</a></li>
+</ul>
+</li>
+<li>
+<p><a href="https://router.vuejs.org/zh/guide/advanced/navigation-guards.html#%E5%85%A8%E5%B1%80%E5%89%8D%E7%BD%AE%E5%AE%88%E5%8D%AB" rel="nofollow">导航守卫</a>：</p>
+<ul>
+<li>全局守卫：
+<ul>
+<li>全局前置守卫：<code class="notranslate">router.beforeEach</code>，导航触发时，全局前置守卫按照创建顺序调用。</li>
+<li>全局解析守卫：<code class="notranslate">router.beforeResolve</code>，导航被确认之前，同时在所有组件内守卫和异步路由组件被解析之后，解析守卫就被调用。</li>
+<li>全局后置守卫：<code class="notranslate">router.afterEach</code>。</li>
+</ul>
+</li>
+<li>路由独享守卫：<code class="notranslate">beforeEnter</code>。单个路由独享的钩子函数，它是在路由配置上直接进行定义的。</li>
+<li>组件内守卫：它们是直接在路由组件内部直接进行定义的。
+<ul>
+<li><code class="notranslate">beforeRouteEnter</code></li>
+<li><code class="notranslate">beforeRouteUpdate</code></li>
+<li><code class="notranslate">beforeRouteLeave</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>导航解析流程</p>
+<ul>
+<li>导航被触发。</li>
+<li>在失活的组件里调用 <code class="notranslate">beforeRouteLeave</code> 守卫。</li>
+<li>调用全局的 <code class="notranslate">beforeEach</code> 守卫。</li>
+<li>在重用的组件里调用 <code class="notranslate">beforeRouteUpdate</code> 守卫 (2.2+)。</li>
+<li>在路由配置里调用 <code class="notranslate">beforeEnter</code>。</li>
+<li>解析异步路由组件。</li>
+<li>在被激活的组件里调用 <code class="notranslate">beforeRouteEnter</code>。</li>
+<li>调用全局的 <code class="notranslate">beforeResolve</code> 守卫 (2.5+)。</li>
+<li>导航被确认。</li>
+<li>调用全局的 <code class="notranslate">afterEach</code> 钩子。</li>
+<li>触发 DOM 更新。</li>
+<li>调用 <code class="notranslate">beforeRouteEnter</code> 守卫中传给 <code class="notranslate">next</code> 的回调函数，创建好的组件实例会作为回调函数的参数传入。</li>
+</ul>
+</li>
+<li>
+<p>路由对象：</p>
+<ul>
+<li><a href="https://router.vuejs.org/zh/api/#router-%E5%AE%9E%E4%BE%8B%E5%B1%9E%E6%80%A7" rel="nofollow"><strong>this.$router</strong></a>：<code class="notranslate">router</code> 的 Vue 根实例。是一个全局路由对象，包含了路由跳转的方法、钩子函数等。</li>
+<li><a href="https://router.vuejs.org/zh/api/#%E8%B7%AF%E7%94%B1%E5%AF%B9%E8%B1%A1" rel="nofollow"><strong>this.$route</strong></a>：当前激活的<a href="https://router.vuejs.org/zh/api/#%E8%B7%AF%E7%94%B1%E5%AF%B9%E8%B1%A1" rel="nofollow">路由信息对象</a>。  每一个路由都会有一个 route 对象，是一个局部对象，包含path,params,hash,query,fullPath,matched,name等路由信息参数。
+<ul>
+<li>里面的属性是 immutable (不可变) 的，通过 watch 监测变化</li>
+<li>它包含了当前 URL 解析得到的信息，还有 URL 匹配到的<strong>路由记录 (route records)</strong>。</li>
+<li>每次成功的导航后都会产生一个新的对象。</li>
+<li>路由对象出现在多个地方:
+<ul>
+<li>在组件内，即 <code class="notranslate">this.$route</code></li>
+<li>在 <code class="notranslate">$route</code> 观察者回调内</li>
+<li><code class="notranslate">router.match(location)</code> 的返回值</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><a href="https://router.vuejs.org/zh/guide/advanced/lazy-loading.html#%E8%B7%AF%E7%94%B1%E6%87%92%E5%8A%A0%E8%BD%BD" rel="nofollow">路由懒加载</a>：</p>
+<ul>
+<li>将异步组件定义为返回一个 Promise 的工厂函数</li>
+<li>在 Webpack 2 中，我们可以使用<a href="https://github.com/tc39/proposal-dynamic-import">动态 import ()</a>语法来定义代码分块点</li>
+<li>注释语法来提供 chunk name : <code class="notranslate">webpackChunkName</code></li>
+</ul>
+</li>
+<li>
+<p>路由传参：使用 <code class="notranslate">router.push()</code>切换路由。</p>
+<ul>
+<li>
+<p><code class="notranslate">params</code> 传参：</p>
+<ul>
+<li>
+<p>只能使用 <code class="notranslate">name</code>，不能使用 <code class="notranslate">path</code>；如果提供了 <code class="notranslate">path</code>，<code class="notranslate">params</code> 会被忽略</p>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-c">// 这里的 params 不生效</span>
+<span class="pl-s1">router</span><span class="pl-kos">.</span><span class="pl-en">push</span><span class="pl-kos">(</span><span class="pl-kos">{</span> <span class="pl-c1">path</span>: <span class="pl-s">'/user'</span><span class="pl-kos">,</span> <span class="pl-c1">params</span>: <span class="pl-kos">{</span> userId <span class="pl-kos">}</span><span class="pl-kos">}</span><span class="pl-kos">)</span> <span class="pl-c">// -&gt; /user</span></pre></div>
+</li>
+<li>
+<p>参数不会显示在路径上</p>
+</li>
+<li>
+<p>浏览器强制刷新参数会被清空</p>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-c">// 传递参数</span>
+<span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">$router</span><span class="pl-kos">.</span><span class="pl-en">push</span><span class="pl-kos">(</span><span class="pl-kos">{</span>
+  <span class="pl-c1">name</span>: <span class="pl-v">Home</span><span class="pl-kos">,</span>
+  <span class="pl-c1">params</span>: <span class="pl-kos">{</span>
+      <span class="pl-c1">test</span>: <span class="pl-s">'hello'</span>
+  <span class="pl-kos">}</span>
+<span class="pl-kos">}</span><span class="pl-kos">)</span>
+<span class="pl-s1">router</span><span class="pl-kos">.</span><span class="pl-en">push</span><span class="pl-kos">(</span><span class="pl-kos">{</span> <span class="pl-c1">name</span>: <span class="pl-s">'user'</span><span class="pl-kos">,</span> <span class="pl-c1">params</span>: <span class="pl-kos">{</span> <span class="pl-c1">userId</span>:<span class="pl-c1">123</span> <span class="pl-kos">}</span><span class="pl-kos">}</span><span class="pl-kos">)</span> <span class="pl-c">// -&gt; /user/123</span>
+<span class="pl-c">// 接收参数</span>
+<span class="pl-k">const</span> <span class="pl-s1">p</span> <span class="pl-c1">=</span> <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">$route</span><span class="pl-kos">.</span><span class="pl-c1">params</span></pre></div>
+</li>
+</ul>
+</li>
+<li>
+<p><code class="notranslate">query</code> 传参：带查询参数。</p>
+<ul>
+<li>
+<p>参数会显示在路径上，刷新不会被清空</p>
+</li>
+<li>
+<p><code class="notranslate">name</code> 可以使用 <code class="notranslate">path</code> 路径</p>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-c">// 传递参数</span>
+<span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">$router</span><span class="pl-kos">.</span><span class="pl-en">push</span><span class="pl-kos">(</span><span class="pl-kos">{</span>
+  	<span class="pl-c1">name</span>: <span class="pl-v">Home</span><span class="pl-kos">,</span>
+  	<span class="pl-c1">query</span>: <span class="pl-kos">{</span>
+		<span class="pl-c1">test</span>:<span class="pl-s">"hello"</span>
+	<span class="pl-kos">}</span>
+<span class="pl-kos">}</span><span class="pl-kos">)</span>
+<span class="pl-c">// 带查询参数，变成 /register?plan=private</span>
+<span class="pl-s1">router</span><span class="pl-kos">.</span><span class="pl-en">push</span><span class="pl-kos">(</span><span class="pl-kos">{</span> <span class="pl-c1">path</span>: <span class="pl-s">'register'</span><span class="pl-kos">,</span> <span class="pl-c1">query</span>: <span class="pl-kos">{</span> <span class="pl-c1">plan</span>: <span class="pl-s">'private'</span> <span class="pl-kos">}</span><span class="pl-kos">}</span><span class="pl-kos">)</span>
+<span class="pl-c">// 接收参数</span>
+<span class="pl-k">const</span> <span class="pl-s1">q</span> <span class="pl-c1">=</span> <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">$route</span><span class="pl-kos">.</span><span class="pl-c1">query</span></pre></div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2>总体流程</h2>
+<h2>路由对象</h2>
+<p>VueRouter 的实现是一个类，它的定义在 <a href="https://github.com/vuejs/vue-router/blob/v3.0.1/src/index.js">src/index.js</a>中：</p>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-k">export</span> <span class="pl-k">default</span> <span class="pl-k">class</span> <span class="pl-v">VueRouter</span> <span class="pl-kos">{</span>
+  <span class="pl-k">static</span> <span class="pl-c1">install</span>: <span class="pl-kos">(</span><span class="pl-kos">)</span> <span class="pl-c1">=&gt;</span> <span class="pl-k">void</span><span class="pl-kos">;</span>
+  <span class="pl-k">static</span> <span class="pl-c1">version</span>: <span class="pl-s1">string</span><span class="pl-kos">;</span>
+
+  <span class="pl-c1">app</span>: <span class="pl-c1">any</span><span class="pl-kos">;</span>
+  <span class="pl-c1">apps</span>: <span class="pl-c1">Array</span><span class="pl-c1">&lt;</span><span class="pl-c1">any</span><span class="pl-c1">&gt;</span><span class="pl-kos">;</span>
+  <span class="pl-c1">ready</span>: <span class="pl-c1">boolean</span><span class="pl-kos">;</span>
+  <span class="pl-c1">readyCbs</span>: <span class="pl-v">Array</span><span class="pl-c1">&lt;</span><span class="pl-v">Function</span><span class="pl-c1">&gt;</span><span class="pl-kos">;</span>
+  <span class="pl-c1">options</span>: <span class="pl-c1">RouterOptions</span><span class="pl-kos">;</span>
+  <span class="pl-c1">mode</span>: <span class="pl-c1">string</span><span class="pl-kos">;</span>
+  <span class="pl-c1">history</span>: <span class="pl-c1">HashHistory</span> <span class="pl-c1">|</span> <span class="pl-c1">HTML5History</span> <span class="pl-c1">|</span> <span class="pl-c1">AbstractHistory</span><span class="pl-kos">;</span>
+  <span class="pl-c1">matcher</span>: <span class="pl-c1">Matcher</span><span class="pl-kos">;</span>
+  <span class="pl-c1">fallback</span>: <span class="pl-c1">boolean</span><span class="pl-kos">;</span>
+  <span class="pl-c1">beforeHooks</span>: <span class="pl-v">Array</span><span class="pl-c1">&lt;</span>?<span class="pl-c1">NavigationGuard</span><span class="pl-c1">&gt;</span><span class="pl-kos">;</span>
+  <span class="pl-c1">resolveHooks</span>: <span class="pl-v">Array</span><span class="pl-c1">&lt;</span>?<span class="pl-c1">NavigationGuard</span><span class="pl-c1">&gt;</span><span class="pl-kos">;</span>
+  <span class="pl-c1">afterHooks</span>: <span class="pl-v">Array</span><span class="pl-c1">&lt;</span>?<span class="pl-c1">AfterNavigationHook</span><span class="pl-c1">&gt;</span><span class="pl-kos">;</span>
+
+  <span class="pl-en">constructor</span> <span class="pl-kos">(</span><span class="pl-s1">options</span>: <span class="pl-v">RouterOptions</span> <span class="pl-c1">=</span> <span class="pl-kos">{</span><span class="pl-kos">}</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">app</span> <span class="pl-c1">=</span> <span class="pl-c1">null</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">apps</span> <span class="pl-c1">=</span> <span class="pl-kos">[</span><span class="pl-kos">]</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">options</span> <span class="pl-c1">=</span> <span class="pl-s1">options</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">beforeHooks</span> <span class="pl-c1">=</span> <span class="pl-kos">[</span><span class="pl-kos">]</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">resolveHooks</span> <span class="pl-c1">=</span> <span class="pl-kos">[</span><span class="pl-kos">]</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">afterHooks</span> <span class="pl-c1">=</span> <span class="pl-kos">[</span><span class="pl-kos">]</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">matcher</span> <span class="pl-c1">=</span> <span class="pl-en">createMatcher</span><span class="pl-kos">(</span><span class="pl-s1">options</span><span class="pl-kos">.</span><span class="pl-c1">routes</span> <span class="pl-c1">||</span> <span class="pl-kos">[</span><span class="pl-kos">]</span><span class="pl-kos">,</span> <span class="pl-smi">this</span><span class="pl-kos">)</span>
+
+    <span class="pl-k">let</span> <span class="pl-s1">mode</span> <span class="pl-c1">=</span> <span class="pl-s1">options</span><span class="pl-kos">.</span><span class="pl-c1">mode</span> <span class="pl-c1">||</span> <span class="pl-s">'hash'</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">fallback</span> <span class="pl-c1">=</span> <span class="pl-s1">mode</span> <span class="pl-c1">===</span> <span class="pl-s">'history'</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-c1">!</span><span class="pl-s1">supportsPushState</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-s1">options</span><span class="pl-kos">.</span><span class="pl-c1">fallback</span> <span class="pl-c1">!==</span> <span class="pl-c1">false</span>
+    <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">fallback</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+      <span class="pl-s1">mode</span> <span class="pl-c1">=</span> <span class="pl-s">'hash'</span>
+    <span class="pl-kos">}</span>
+    <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-c1">!</span><span class="pl-s1">inBrowser</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+      <span class="pl-s1">mode</span> <span class="pl-c1">=</span> <span class="pl-s">'abstract'</span>
+    <span class="pl-kos">}</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">mode</span> <span class="pl-c1">=</span> <span class="pl-s1">mode</span>
+
+    <span class="pl-k">switch</span> <span class="pl-kos">(</span><span class="pl-s1">mode</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+      <span class="pl-k">case</span> <span class="pl-s">'history'</span>:
+        <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">history</span> <span class="pl-c1">=</span> <span class="pl-k">new</span> <span class="pl-v">HTML5History</span><span class="pl-kos">(</span><span class="pl-smi">this</span><span class="pl-kos">,</span> <span class="pl-s1">options</span><span class="pl-kos">.</span><span class="pl-c1">base</span><span class="pl-kos">)</span>
+        <span class="pl-k">break</span>
+      <span class="pl-k">case</span> <span class="pl-s">'hash'</span>:
+        <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">history</span> <span class="pl-c1">=</span> <span class="pl-k">new</span> <span class="pl-v">HashHistory</span><span class="pl-kos">(</span><span class="pl-smi">this</span><span class="pl-kos">,</span> <span class="pl-s1">options</span><span class="pl-kos">.</span><span class="pl-c1">base</span><span class="pl-kos">,</span> <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">fallback</span><span class="pl-kos">)</span>
+        <span class="pl-k">break</span>
+      <span class="pl-k">case</span> <span class="pl-s">'abstract'</span>:
+        <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">history</span> <span class="pl-c1">=</span> <span class="pl-k">new</span> <span class="pl-v">AbstractHistory</span><span class="pl-kos">(</span><span class="pl-smi">this</span><span class="pl-kos">,</span> <span class="pl-s1">options</span><span class="pl-kos">.</span><span class="pl-c1">base</span><span class="pl-kos">)</span>
+        <span class="pl-k">break</span>
+      <span class="pl-k">default</span>:
+        <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">process</span><span class="pl-kos">.</span><span class="pl-c1">env</span><span class="pl-kos">.</span><span class="pl-c1">NODE_ENV</span> <span class="pl-c1">!==</span> <span class="pl-s">'production'</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+          <span class="pl-en">assert</span><span class="pl-kos">(</span><span class="pl-c1">false</span><span class="pl-kos">,</span> <span class="pl-s">`invalid mode: <span class="pl-s1"><span class="pl-kos">${</span><span class="pl-s1">mode</span><span class="pl-kos">}</span></span>`</span><span class="pl-kos">)</span>
+        <span class="pl-kos">}</span>
+    <span class="pl-kos">}</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-c1">match</span> <span class="pl-kos">(</span>
+    <span class="pl-s1">raw</span>: <span class="pl-v">RawLocation</span><span class="pl-kos">,</span>
+    <span class="pl-s1">current</span>?: <span class="pl-v">Route</span><span class="pl-kos">,</span>
+    <span class="pl-s1">redirectedFrom</span>?: <span class="pl-v">Location</span>
+  <span class="pl-kos">)</span>: <span class="pl-v">Route</span> <span class="pl-kos">{</span>
+    <span class="pl-c1">return</span> <span class="pl-s1">this</span><span class="pl-kos">.</span><span class="pl-s1">matcher</span><span class="pl-kos">.</span><span class="pl-s1">match</span><span class="pl-kos">(</span><span class="pl-s1">raw</span><span class="pl-kos">,</span> <span class="pl-s1">current</span><span class="pl-kos">,</span> <span class="pl-s1">redirectedFrom</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-k">get</span> <span class="pl-en">currentRoute</span> <span class="pl-kos">(</span><span class="pl-kos">)</span>: ?<span class="pl-v">Route</span> <span class="pl-kos">{</span>
+    <span class="pl-k">return</span> <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">history</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">history</span><span class="pl-kos">.</span><span class="pl-c1">current</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-en">init</span> <span class="pl-kos">(</span><span class="pl-s1">app</span>: <span class="pl-s1">any</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-s1">process</span><span class="pl-kos">.</span><span class="pl-c1">env</span><span class="pl-kos">.</span><span class="pl-c1">NODE_ENV</span> <span class="pl-c1">!==</span> <span class="pl-s">'production'</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-en">assert</span><span class="pl-kos">(</span>
+      <span class="pl-s1">install</span><span class="pl-kos">.</span><span class="pl-c1">installed</span><span class="pl-kos">,</span>
+      <span class="pl-s">`not installed. Make sure to call \`Vue.use(VueRouter)\` `</span> <span class="pl-c1">+</span>
+      <span class="pl-s">`before creating root instance.`</span>
+    <span class="pl-kos">)</span>
+
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">apps</span><span class="pl-kos">.</span><span class="pl-en">push</span><span class="pl-kos">(</span><span class="pl-s1">app</span><span class="pl-kos">)</span>
+
+    <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">app</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+      <span class="pl-k">return</span>
+    <span class="pl-kos">}</span>
+
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">app</span> <span class="pl-c1">=</span> <span class="pl-s1">app</span>
+
+    <span class="pl-k">const</span> <span class="pl-s1">history</span> <span class="pl-c1">=</span> <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">history</span>
+
+    <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">history</span> <span class="pl-k">instanceof</span> <span class="pl-v">HTML5History</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+      <span class="pl-s1">history</span><span class="pl-kos">.</span><span class="pl-en">transitionTo</span><span class="pl-kos">(</span><span class="pl-s1">history</span><span class="pl-kos">.</span><span class="pl-en">getCurrentLocation</span><span class="pl-kos">(</span><span class="pl-kos">)</span><span class="pl-kos">)</span>
+    <span class="pl-kos">}</span> <span class="pl-k">else</span> <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">history</span> <span class="pl-k">instanceof</span> <span class="pl-v">HashHistory</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+      <span class="pl-k">const</span> <span class="pl-en">setupHashListener</span> <span class="pl-c1">=</span> <span class="pl-kos">(</span><span class="pl-kos">)</span> <span class="pl-c1">=&gt;</span> <span class="pl-kos">{</span>
+        <span class="pl-s1">history</span><span class="pl-kos">.</span><span class="pl-en">setupListeners</span><span class="pl-kos">(</span><span class="pl-kos">)</span>
+      <span class="pl-kos">}</span>
+      <span class="pl-s1">history</span><span class="pl-kos">.</span><span class="pl-en">transitionTo</span><span class="pl-kos">(</span>
+        <span class="pl-s1">history</span><span class="pl-kos">.</span><span class="pl-en">getCurrentLocation</span><span class="pl-kos">(</span><span class="pl-kos">)</span><span class="pl-kos">,</span>
+        <span class="pl-en">setupHashListener</span><span class="pl-kos">,</span>
+        <span class="pl-en">setupHashListener</span>
+      <span class="pl-kos">)</span>
+    <span class="pl-kos">}</span>
+
+    <span class="pl-s1">history</span><span class="pl-kos">.</span><span class="pl-en">listen</span><span class="pl-kos">(</span><span class="pl-s1">route</span> <span class="pl-c1">=&gt;</span> <span class="pl-kos">{</span>
+      <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">apps</span><span class="pl-kos">.</span><span class="pl-en">forEach</span><span class="pl-kos">(</span><span class="pl-kos">(</span><span class="pl-s1">app</span><span class="pl-kos">)</span> <span class="pl-c1">=&gt;</span> <span class="pl-kos">{</span>
+        <span class="pl-s1">app</span><span class="pl-kos">.</span><span class="pl-c1">_route</span> <span class="pl-c1">=</span> <span class="pl-s1">route</span>
+      <span class="pl-kos">}</span><span class="pl-kos">)</span>
+    <span class="pl-kos">}</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-s1">beforeEach</span> <span class="pl-kos">(</span><span class="pl-s1">fn</span>: <span class="pl-v">Function</span><span class="pl-kos">)</span>: <span class="pl-v">Function</span> <span class="pl-kos">{</span>
+    <span class="pl-k">return</span> <span class="pl-s1">registerHook</span><span class="pl-kos">(</span><span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-s1">beforeHooks</span><span class="pl-kos">,</span> fn<span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-s1">beforeResolve</span> <span class="pl-kos">(</span><span class="pl-s1">fn</span>: <span class="pl-v">Function</span><span class="pl-kos">)</span>: <span class="pl-v">Function</span> <span class="pl-kos">{</span>
+    <span class="pl-k">return</span> <span class="pl-s1">registerHook</span><span class="pl-kos">(</span><span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">resolveHooks</span><span class="pl-kos">,</span> <span class="pl-s1">fn</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-s1">afterEach</span> <span class="pl-kos">(</span><span class="pl-s1">fn</span>: <span class="pl-v">Function</span><span class="pl-kos">)</span>: <span class="pl-v">Function</span> <span class="pl-kos">{</span>
+    <span class="pl-k">return</span> <span class="pl-s1">registerHook</span><span class="pl-kos">(</span><span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">afterHooks</span><span class="pl-kos">,</span> <span class="pl-s1">fn</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-s1">onReady</span> <span class="pl-kos">(</span><span class="pl-s1">cb</span>: <span class="pl-v">Function</span><span class="pl-kos">,</span> <span class="pl-s1">errorCb</span>?<span class="pl-s1"></span>: <span class="pl-v">Function</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">history</span><span class="pl-kos">.</span><span class="pl-en">onReady</span><span class="pl-kos">(</span><span class="pl-s1">cb</span><span class="pl-kos">,</span> <span class="pl-s1">errorCb</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-s1">onError</span> <span class="pl-kos">(</span><span class="pl-s1">errorCb</span>: <span class="pl-v">Function</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">history</span><span class="pl-kos">.</span><span class="pl-en">onError</span><span class="pl-kos">(</span><span class="pl-s1">errorCb</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-s1">push</span> <span class="pl-kos">(</span><span class="pl-s1">location</span>: <span class="pl-v">RawLocation</span><span class="pl-kos">,</span> <span class="pl-s1">onComplete</span>?<span class="pl-s1"></span>: <span class="pl-v">Function</span><span class="pl-kos">,</span> <span class="pl-s1">onAbort</span>?<span class="pl-s1"></span>: <span class="pl-v">Function</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">history</span><span class="pl-kos">.</span><span class="pl-en">push</span><span class="pl-kos">(</span><span class="pl-s1">location</span><span class="pl-kos">,</span> <span class="pl-s1">onComplete</span><span class="pl-kos">,</span> <span class="pl-s1">onAbort</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-s1">replace</span> <span class="pl-kos">(</span><span class="pl-s1">location</span>: <span class="pl-v">RawLocation</span><span class="pl-kos">,</span> <span class="pl-s1">onComplete</span>?<span class="pl-s1"></span>: <span class="pl-v">Function</span><span class="pl-kos">,</span> <span class="pl-s1">onAbort</span>?<span class="pl-s1"></span>: <span class="pl-v">Function</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">history</span><span class="pl-kos">.</span><span class="pl-en">replace</span><span class="pl-kos">(</span><span class="pl-s1">location</span><span class="pl-kos">,</span> <span class="pl-s1">onComplete</span><span class="pl-kos">,</span> <span class="pl-s1">onAbort</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-s1">go</span> <span class="pl-kos">(</span><span class="pl-s1">n</span>: <span class="pl-s1">number</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">history</span><span class="pl-kos">.</span><span class="pl-en">go</span><span class="pl-kos">(</span><span class="pl-s1">n</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-s1">back</span> <span class="pl-kos">(</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-en">go</span><span class="pl-kos">(</span><span class="pl-c1">-</span><span class="pl-c1">1</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-s1">forward</span> <span class="pl-kos">(</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-en">go</span><span class="pl-kos">(</span><span class="pl-c1">1</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-s1">getMatchedComponents</span> <span class="pl-kos">(</span><span class="pl-s1">to</span>?<span class="pl-s1"></span>: <span class="pl-v">RawLocation</span> <span class="pl-c1">|</span> <span class="pl-v">Route</span><span class="pl-kos">)</span>: <span class="pl-v">Array</span><span class="pl-c1">&lt;</span><span class="pl-s1">any</span><span class="pl-c1">&gt;</span> <span class="pl-kos">{</span>
+    <span class="pl-c1">const</span> <span class="pl-s1">route</span>: <span class="pl-s1">any</span> <span class="pl-c1">=</span> <span class="pl-s1">to</span>
+      ? <span class="pl-s1">to</span><span class="pl-kos">.</span><span class="pl-c1">matched</span>
+        ? <span class="pl-s1">to</span>
+        : <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-en">resolve</span><span class="pl-kos">(</span><span class="pl-s1">to</span><span class="pl-kos">)</span><span class="pl-kos">.</span><span class="pl-c1">route</span>
+      : <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-en">currentRoute</span>
+    <span class="pl-s1">if</span> <span class="pl-kos">(</span><span class="pl-c1">!</span><span class="pl-s1">route</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+      <span class="pl-s1">return</span> <span class="pl-kos">[</span><span class="pl-kos">]</span>
+    <span class="pl-kos">}</span>
+    <span class="pl-k">return</span> <span class="pl-kos">[</span><span class="pl-kos">]</span><span class="pl-kos">.</span><span class="pl-s1">concat</span><span class="pl-kos">.</span><span class="pl-en">apply</span><span class="pl-kos">(</span><span class="pl-kos">[</span><span class="pl-kos">]</span><span class="pl-kos">,</span> <span class="pl-s1">route</span><span class="pl-kos">.</span><span class="pl-c1">matched</span><span class="pl-kos">.</span><span class="pl-en">map</span><span class="pl-kos">(</span><span class="pl-s1">m</span> <span class="pl-c1">=&gt;</span> <span class="pl-kos">{</span>
+      <span class="pl-k">return</span> <span class="pl-v">Object</span><span class="pl-kos">.</span><span class="pl-en">keys</span><span class="pl-kos">(</span><span class="pl-s1">m</span><span class="pl-kos">.</span><span class="pl-c1">components</span><span class="pl-kos">)</span><span class="pl-kos">.</span><span class="pl-en">map</span><span class="pl-kos">(</span><span class="pl-s1">key</span> <span class="pl-c1">=&gt;</span> <span class="pl-kos">{</span>
+        <span class="pl-k">return</span> <span class="pl-s1">m</span><span class="pl-kos">.</span><span class="pl-c1">components</span><span class="pl-kos">[</span><span class="pl-s1">key</span><span class="pl-kos">]</span>
+      <span class="pl-kos">}</span><span class="pl-kos">)</span>
+    <span class="pl-kos">}</span><span class="pl-kos">)</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-s1">resolve</span> <span class="pl-kos">(</span>
+    <span class="pl-s1">to</span>: <span class="pl-v">RawLocation</span><span class="pl-kos">,</span>
+    <span class="pl-s1">current</span>?<span class="pl-s1"></span>: <span class="pl-v">Route</span><span class="pl-kos">,</span>
+    <span class="pl-s1">append</span>?<span class="pl-s1"></span>: <span class="pl-s1">boolean</span>
+  <span class="pl-kos">)</span>: <span class="pl-kos">{</span>
+    <span class="pl-c1">location</span>: <span class="pl-v">Location</span><span class="pl-kos">,</span>
+    <span class="pl-c1">route</span>: <span class="pl-v">Route</span><span class="pl-kos">,</span>
+    <span class="pl-c1">href</span>: <span class="pl-s1">string</span><span class="pl-kos">,</span>
+    <span class="pl-c1">normalizedTo</span>: <span class="pl-v">Location</span><span class="pl-kos">,</span>
+    <span class="pl-c1">resolved</span>: <span class="pl-v">Route</span>
+  <span class="pl-kos">}</span> <span class="pl-kos">{</span>
+    <span class="pl-s1">const</span> location <span class="pl-c1">=</span> <span class="pl-en">normalizeLocation</span><span class="pl-kos">(</span>
+      <span class="pl-s1">to</span><span class="pl-kos">,</span>
+      <span class="pl-s1">current</span> <span class="pl-c1">||</span> <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">history</span><span class="pl-kos">.</span><span class="pl-c1">current</span><span class="pl-kos">,</span>
+      <span class="pl-s1">append</span><span class="pl-kos">,</span>
+      <span class="pl-smi">this</span>
+    <span class="pl-kos">)</span>
+    <span class="pl-s1">const</span> <span class="pl-s1">route</span> <span class="pl-c1">=</span> <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-en">match</span><span class="pl-kos">(</span><span class="pl-s1">location</span><span class="pl-kos">,</span> <span class="pl-s1">current</span><span class="pl-kos">)</span>
+    <span class="pl-s1">const</span> <span class="pl-s1">fullPath</span> <span class="pl-c1">=</span> <span class="pl-s1">route</span><span class="pl-kos">.</span><span class="pl-c1">redirectedFrom</span> <span class="pl-c1">||</span> <span class="pl-s1">route</span><span class="pl-kos">.</span><span class="pl-c1">fullPath</span>
+    <span class="pl-s1">const</span> <span class="pl-s1">base</span> <span class="pl-c1">=</span> <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">history</span><span class="pl-kos">.</span><span class="pl-c1">base</span>
+    <span class="pl-s1">const</span> <span class="pl-s1">href</span> <span class="pl-c1">=</span> <span class="pl-en">createHref</span><span class="pl-kos">(</span><span class="pl-s1">base</span><span class="pl-kos">,</span> <span class="pl-s1">fullPath</span><span class="pl-kos">,</span> <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">mode</span><span class="pl-kos">)</span>
+    <span class="pl-s1">return</span> <span class="pl-kos">{</span>
+      <span class="pl-s1">location</span><span class="pl-kos">,</span>
+      route<span class="pl-kos">,</span>
+      href<span class="pl-kos">,</span>
+      <span class="pl-c1">normalizedTo</span>: <span class="pl-s1">location</span><span class="pl-kos">,</span>
+      <span class="pl-c1">resolved</span>: <span class="pl-s1">route</span>
+    <span class="pl-kos">}</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-s1">addRoutes</span> <span class="pl-kos">(</span><span class="pl-s1">routes</span>: <span class="pl-v">Array</span><span class="pl-c1">&lt;</span><span class="pl-v">RouteConfig</span><span class="pl-c1">&gt;</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">matcher</span><span class="pl-kos">.</span><span class="pl-en">addRoutes</span><span class="pl-kos">(</span><span class="pl-s1">routes</span><span class="pl-kos">)</span>
+    <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">history</span><span class="pl-kos">.</span><span class="pl-c1">current</span> <span class="pl-c1">!==</span> <span class="pl-c1">START</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+      <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">history</span><span class="pl-kos">.</span><span class="pl-en">transitionTo</span><span class="pl-kos">(</span><span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">history</span><span class="pl-kos">.</span><span class="pl-en">getCurrentLocation</span><span class="pl-kos">(</span><span class="pl-kos">)</span><span class="pl-kos">)</span>
+    <span class="pl-kos">}</span>
+  <span class="pl-kos">}</span>
+<span class="pl-kos">}</span></pre></div>
+<h2>路由模式</h2>
+<ul>
+<li>vue 中定义了三种路由模式：<code class="notranslate">hash</code>、<code class="notranslate">history</code>、<code class="notranslate">abstract</code> 。</li>
+</ul>
+<h3><strong>hash 模式</strong></h3>
+<p>使用 url 的 hash 值来作为路由。</p>
+<ul>
+<li>url 中带有 <code class="notranslate">#</code> 符号，如 <code class="notranslate">http://localhost:8080/#/</code>；</li>
+<li>页面跳转时   <code class="notranslate">#</code> 后面 hash 值改变；当 URL 改变时，页面不会重新加载（实际有重新获取数据）；</li>
+<li>通过浏览器的前进、后退、刷新页面均可以变；</li>
+</ul>
+<p><strong>原理：</strong></p>
+<ul>
+<li>监听路由变化： 如果支持 <a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Window/popstate_event" rel="nofollow">popstate 事件</a>，则监听 popstate 事件，否则监听 <a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Window/hashchange_event" rel="nofollow">hashchange 事件</a>;</li>
+<li>点击 <code class="notranslate">router-link</code> 路由切换：判断是否支持  <a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Window/history" rel="nofollow">HTML5 History API</a> （replaceState 和 pushState），支持则使用 History API，否则使用 <a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Location/hash" rel="nofollow">Location.hash API</a></li>
+</ul>
+<h3><strong>History 模式</strong></h3>
+<p>使用 <a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Window/history" rel="nofollow">HTML5 History API</a> 和并需要服务器配置。一般用于多页应用。</p>
+<ul>
+<li>url 中没有 <code class="notranslate">#</code> 符号</li>
+<li>可以通过浏览器前进、后退，但刷新页面会导致 404 (如果服务器中没有相应的响应或者资源)；</li>
+</ul>
+<p><strong>原理：</strong></p>
+<ul>
+<li>监听路由变化：监听 <a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Window/popstate_event" rel="nofollow">popstate 事件</a>；</li>
+<li>点击 <code class="notranslate">router-link</code> 路由切换：使用  <a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Window/history" rel="nofollow">HTML5 History API</a> （replaceState 和 pushState）切换路由；</li>
+</ul>
+<p><strong>缺点：</strong></p>
+<ul>
+<li>要在服务端增加一个覆盖所有情况的候选资源：如果 URL 匹配不到任何静态资源，则应该返回同一个 <code class="notranslate">index.html</code> 页面，这个页面就是你 app 依赖的页面。</li>
+</ul>
+<h3><strong>Abstract 模式</strong></h3>
+<ul>
+<li>支持所有javascript运行模式。如果发现没有浏览器的API，路由会自动强制进入这个模式。</li>
+<li>优点
+<ul>
+<li>
+<p>完全控制路由行为</p>
+</li>
+<li>
+<p>不依赖浏览器环境</p>
+</li>
+<li>
+<p>避免URL暴露内部结构</p>
+</li>
+<li>
+<p>在嵌入式场景中保持父级URL不变</p>
+</li>
+</ul>
+</li>
+<li>缺点
+<ul>
+<li>
+<p>无法通过URL分享特定页面</p>
+</li>
+<li>
+<p>浏览器刷新会丢失路由状态</p>
+</li>
+<li>
+<p>不利于SEO</p>
+</li>
+<li>
+<p>用户无法使用浏览器前进后退按钮</p>
+</li>
+</ul>
+</li>
+</ul>
+<h2>路由安装</h2>
+<ul>
+<li>
+<p>Vue-Router 的入口文件是 <code class="notranslate">src/index.js</code>，其中定义了 <code class="notranslate">VueRouter</code> 类，也实现了 <code class="notranslate">install</code> 的静态方法：<code class="notranslate">VueRouter.install = install</code>，它的定义在 <code class="notranslate">src/install.js</code> 中：</p>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-c">//防止重复安装 - 单例模式</span>
+<span class="pl-c">// 根组件初始化 - 路由实例初始化和响应式设置</span>
+<span class="pl-c">//子组件连接 - 通过 _routerRoot 建立访问链</span>
+<span class="pl-c">//全局属性注入 - $router 和 $route</span>
+<span class="pl-c">//全局组件注册 - &lt;router-view&gt; 和 &lt;router-link&gt;</span>
+<span class="pl-c">// 路由守卫配置 - 设置合并策略</span>
+<span class="pl-c">// 响应式系统 - 核心的路由状态响应式机制</span>
+<span class="pl-k">export</span> <span class="pl-k">let</span> <span class="pl-s1">_Vue</span>
+<span class="pl-k">export</span> <span class="pl-k">function</span> <span class="pl-en">install</span> <span class="pl-kos">(</span><span class="pl-v">Vue</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+  <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">install</span><span class="pl-kos">.</span><span class="pl-c1">installed</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-s1">_Vue</span> <span class="pl-c1">===</span> <span class="pl-v">Vue</span><span class="pl-kos">)</span> <span class="pl-k">return</span>
+  <span class="pl-s1">install</span><span class="pl-kos">.</span><span class="pl-c1">installed</span> <span class="pl-c1">=</span> <span class="pl-c1">true</span>
+
+  <span class="pl-s1">_Vue</span> <span class="pl-c1">=</span> <span class="pl-v">Vue</span>
+
+  <span class="pl-k">const</span> <span class="pl-en">isDef</span> <span class="pl-c1">=</span> <span class="pl-s1">v</span> <span class="pl-c1">=&gt;</span> <span class="pl-s1">v</span> <span class="pl-c1">!==</span> <span class="pl-c1">undefined</span>
+
+  <span class="pl-k">const</span> <span class="pl-en">registerInstance</span> <span class="pl-c1">=</span> <span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">,</span> <span class="pl-s1">callVal</span><span class="pl-kos">)</span> <span class="pl-c1">=&gt;</span> <span class="pl-kos">{</span>
+    <span class="pl-k">let</span> <span class="pl-s1">i</span> <span class="pl-c1">=</span> <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">$options</span><span class="pl-kos">.</span><span class="pl-c1">_parentVnode</span>
+    <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-en">isDef</span><span class="pl-kos">(</span><span class="pl-s1">i</span><span class="pl-kos">)</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-en">isDef</span><span class="pl-kos">(</span><span class="pl-s1">i</span> <span class="pl-c1">=</span> <span class="pl-s1">i</span><span class="pl-kos">.</span><span class="pl-c1">data</span><span class="pl-kos">)</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-en">isDef</span><span class="pl-kos">(</span><span class="pl-s1">i</span> <span class="pl-c1">=</span> <span class="pl-s1">i</span><span class="pl-kos">.</span><span class="pl-c1">registerRouteInstance</span><span class="pl-kos">)</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+      <span class="pl-s1">i</span><span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">,</span> <span class="pl-s1">callVal</span><span class="pl-kos">)</span>
+    <span class="pl-kos">}</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-v">Vue</span><span class="pl-kos">.</span><span class="pl-en">mixin</span><span class="pl-kos">(</span><span class="pl-kos">{</span>
+    <span class="pl-en">beforeCreate</span> <span class="pl-kos">(</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+      <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-en">isDef</span><span class="pl-kos">(</span><span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">$options</span><span class="pl-kos">.</span><span class="pl-c1">router</span><span class="pl-kos">)</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+        <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">_routerRoot</span> <span class="pl-c1">=</span> <span class="pl-smi">this</span>
+        <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">_router</span> <span class="pl-c1">=</span> <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">$options</span><span class="pl-kos">.</span><span class="pl-c1">router</span>
+        <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">_router</span><span class="pl-kos">.</span><span class="pl-en">init</span><span class="pl-kos">(</span><span class="pl-smi">this</span><span class="pl-kos">)</span>
+        <span class="pl-v">Vue</span><span class="pl-kos">.</span><span class="pl-c1">util</span><span class="pl-kos">.</span><span class="pl-en">defineReactive</span><span class="pl-kos">(</span><span class="pl-smi">this</span><span class="pl-kos">,</span> <span class="pl-s">'_route'</span><span class="pl-kos">,</span> <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">_router</span><span class="pl-kos">.</span><span class="pl-c1">history</span><span class="pl-kos">.</span><span class="pl-c1">current</span><span class="pl-kos">)</span>
+      <span class="pl-kos">}</span> <span class="pl-k">else</span> <span class="pl-kos">{</span>
+        <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">_routerRoot</span> <span class="pl-c1">=</span> <span class="pl-kos">(</span><span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">$parent</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">$parent</span><span class="pl-kos">.</span><span class="pl-c1">_routerRoot</span><span class="pl-kos">)</span> <span class="pl-c1">||</span> <span class="pl-smi">this</span>
+      <span class="pl-kos">}</span>
+      <span class="pl-en">registerInstance</span><span class="pl-kos">(</span><span class="pl-smi">this</span><span class="pl-kos">,</span> <span class="pl-smi">this</span><span class="pl-kos">)</span>
+    <span class="pl-kos">}</span><span class="pl-kos">,</span>
+    <span class="pl-en">destroyed</span> <span class="pl-kos">(</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+      <span class="pl-en">registerInstance</span><span class="pl-kos">(</span><span class="pl-smi">this</span><span class="pl-kos">)</span>
+    <span class="pl-kos">}</span>
+  <span class="pl-kos">}</span><span class="pl-kos">)</span>
+
+  <span class="pl-v">Object</span><span class="pl-kos">.</span><span class="pl-en">defineProperty</span><span class="pl-kos">(</span><span class="pl-v">Vue</span><span class="pl-kos">.</span><span class="pl-c1">prototype</span><span class="pl-kos">,</span> <span class="pl-s">'$router'</span><span class="pl-kos">,</span> <span class="pl-kos">{</span>
+    <span class="pl-en">get</span> <span class="pl-kos">(</span><span class="pl-kos">)</span> <span class="pl-kos">{</span> <span class="pl-k">return</span> <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">_routerRoot</span><span class="pl-kos">.</span><span class="pl-c1">_router</span> <span class="pl-kos">}</span>
+  <span class="pl-kos">}</span><span class="pl-kos">)</span>
+
+  <span class="pl-v">Object</span><span class="pl-kos">.</span><span class="pl-en">defineProperty</span><span class="pl-kos">(</span><span class="pl-v">Vue</span><span class="pl-kos">.</span><span class="pl-c1">prototype</span><span class="pl-kos">,</span> <span class="pl-s">'$route'</span><span class="pl-kos">,</span> <span class="pl-kos">{</span>
+    <span class="pl-en">get</span> <span class="pl-kos">(</span><span class="pl-kos">)</span> <span class="pl-kos">{</span> <span class="pl-k">return</span> <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">_routerRoot</span><span class="pl-kos">.</span><span class="pl-c1">_route</span> <span class="pl-kos">}</span>
+  <span class="pl-kos">}</span><span class="pl-kos">)</span>
+
+  <span class="pl-v">Vue</span><span class="pl-kos">.</span><span class="pl-en">component</span><span class="pl-kos">(</span><span class="pl-s">'RouterView'</span><span class="pl-kos">,</span> <span class="pl-v">View</span><span class="pl-kos">)</span>
+  <span class="pl-v">Vue</span><span class="pl-kos">.</span><span class="pl-en">component</span><span class="pl-kos">(</span><span class="pl-s">'RouterLink'</span><span class="pl-kos">,</span> <span class="pl-v">Link</span><span class="pl-kos">)</span>
+
+  <span class="pl-k">const</span> <span class="pl-s1">strats</span> <span class="pl-c1">=</span> <span class="pl-v">Vue</span><span class="pl-kos">.</span><span class="pl-c1">config</span><span class="pl-kos">.</span><span class="pl-c1">optionMergeStrategies</span>
+  <span class="pl-s1">strats</span><span class="pl-kos">.</span><span class="pl-c1">beforeRouteEnter</span> <span class="pl-c1">=</span> <span class="pl-s1">strats</span><span class="pl-kos">.</span><span class="pl-c1">beforeRouteLeave</span> <span class="pl-c1">=</span> <span class="pl-s1">strats</span><span class="pl-kos">.</span><span class="pl-c1">beforeRouteUpdate</span> <span class="pl-c1">=</span> <span class="pl-s1">strats</span><span class="pl-kos">.</span><span class="pl-c1">created</span>
+<span class="pl-kos">}</span></pre></div>
+</li>
+</ul></div>
+<div style="font-size:small;margin-top:8px;float:right;"></div>
+
+<button class="btn btn-block" type="button" onclick="openComments()" id="cmButton">评论</button>
+<div class="comments" id="comments"></div>
+
+</div>
+    <div id="footer"><div id="footer1">Copyright © <span id="copyrightYear"></span> <a href="https://199yjy.github.io/record.github.io">yjieyan的私人博客</a></div>
+<div id="footer2">
+    <span id="runday"></span><span>Powered by <a href="https://meekdai.com/Gmeek.html" target="_blank">Gmeek</a></span>
+</div>
+
+<script>
+var now=new Date();
+document.getElementById("copyrightYear").innerHTML=now.getFullYear();
+
+if(""!=""){
+    var startSite=new Date("");
+    var diff=now.getTime()-startSite.getTime();
+    var diffDay=Math.floor(diff/(1000*60*60*24));
+    document.getElementById("runday").innerHTML="网站运行"+diffDay+"天"+" • ";
+}
+</script></div>
+</body>
+<script>
+var IconList={'sun': 'M8 10.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM8 12a4 4 0 100-8 4 4 0 000 8zM8 0a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0V.75A.75.75 0 018 0zm0 13a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 018 13zM2.343 2.343a.75.75 0 011.061 0l1.06 1.061a.75.75 0 01-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zm9.193 9.193a.75.75 0 011.06 0l1.061 1.06a.75.75 0 01-1.06 1.061l-1.061-1.06a.75.75 0 010-1.061zM16 8a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0116 8zM3 8a.75.75 0 01-.75.75H.75a.75.75 0 010-1.5h1.5A.75.75 0 013 8zm10.657-5.657a.75.75 0 010 1.061l-1.061 1.06a.75.75 0 11-1.06-1.06l1.06-1.06a.75.75 0 011.06 0zm-9.193 9.193a.75.75 0 010 1.06l-1.06 1.061a.75.75 0 11-1.061-1.06l1.06-1.061a.75.75 0 011.061 0z', 'moon': 'M9.598 1.591a.75.75 0 01.785-.175 7 7 0 11-8.967 8.967.75.75 0 01.961-.96 5.5 5.5 0 007.046-7.046.75.75 0 01.175-.786zm1.616 1.945a7 7 0 01-7.678 7.678 5.5 5.5 0 107.678-7.678z', 'sync': 'M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z', 'home': 'M6.906.664a1.749 1.749 0 0 1 2.187 0l5.25 4.2c.415.332.657.835.657 1.367v7.019A1.75 1.75 0 0 1 13.25 15h-3.5a.75.75 0 0 1-.75-.75V9H7v5.25a.75.75 0 0 1-.75.75h-3.5A1.75 1.75 0 0 1 1 13.25V6.23c0-.531.242-1.034.657-1.366l5.25-4.2Zm1.25 1.171a.25.25 0 0 0-.312 0l-5.25 4.2a.25.25 0 0 0-.094.196v7.019c0 .138.112.25.25.25H5.5V8.25a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v5.25h2.75a.25.25 0 0 0 .25-.25V6.23a.25.25 0 0 0-.094-.195Z', 'github': 'M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z', 'copy': 'M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z', 'check': 'M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z'};
+var utterancesLoad=0;
+
+let themeSettings={
+    "dark": ["dark","moon","#00f0ff","dark-blue"],
+    "light": ["light","sun","#ff5000","github-light"],
+    "auto": ["auto","sync","","preferred-color-scheme"]
+};
+function changeTheme(mode, icon, color, utheme){
+    document.documentElement.setAttribute("data-color-mode",mode);
+    document.getElementById("themeSwitch").setAttribute("d",value=IconList[icon]);
+    document.getElementById("themeSwitch").parentNode.style.color=color;
+    if(utterancesLoad==1){utterancesTheme(utheme);}
+}
+function modeSwitch(){
+    let currentMode=document.documentElement.getAttribute('data-color-mode');
+    let newMode = currentMode === "light" ? "dark" : currentMode === "dark" ? "auto" : "light";
+    localStorage.setItem("meek_theme", newMode);
+    if(themeSettings[newMode]){
+        changeTheme(...themeSettings[newMode]);
+    }
+}
+function utterancesTheme(theme){
+    const message={type:'set-theme',theme: theme};
+    const iframe=document.getElementsByClassName('utterances-frame')[0];
+    iframe.contentWindow.postMessage(message,'https://utteranc.es');
+}
+if(themeSettings[theme]){changeTheme(...themeSettings[theme]);}
+console.log("\n %c Gmeek last https://github.com/Meekdai/Gmeek \n","padding:5px 0;background:#02d81d;color:#fff");
+</script>
+
+<script>
+document.getElementById("pathHome").setAttribute("d",IconList["home"]);
+document.getElementById("pathIssue").setAttribute("d",IconList["github"]);
+
+
+
+function openComments(){
+    cm=document.getElementById("comments");
+    cmButton=document.getElementById("cmButton");
+    cmButton.innerHTML="loading";
+    span=document.createElement("span");
+    span.setAttribute("class","AnimatedEllipsis");
+    cmButton.appendChild(span);
+
+    script=document.createElement("script");
+    script.setAttribute("src","https://utteranc.es/client.js");
+    script.setAttribute("repo","199yjy/record.github.io");
+    script.setAttribute("issue-term","title");
+    
+    if(localStorage.getItem("meek_theme")=="dark"){script.setAttribute("theme","dark-blue");}
+    else if(localStorage.getItem("meek_theme")=="light") {script.setAttribute("theme","github-light");}
+    else{script.setAttribute("theme","preferred-color-scheme");}
+    
+    script.setAttribute("crossorigin","anonymous");
+    script.setAttribute("async","");
+    cm.appendChild(script);
+
+    int=self.setInterval("iFrameLoading()",200);
+}
+
+function iFrameLoading(){
+    var utterances=document.getElementsByClassName('utterances');
+    if(utterances.length==1){
+        if(utterances[0].style.height!=""){
+            utterancesLoad=1;
+            int=window.clearInterval(int);
+            document.getElementById("cmButton").style.display="none";
+            console.log("utterances Load OK");
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const createClipboardHTML = (codeContent, additionalClasses = '') => `
+        <pre class="notranslate"><code class="notranslate">${codeContent}</code></pre>
+        <div class="clipboard-container position-absolute right-0 top-0 ${additionalClasses}">
+            <clipboard-copy class="ClipboardButton btn m-2 p-0" role="button" style="display: inherit;">
+                <svg height="16" width="16" class="octicon octicon-copy m-2"><path d="${IconList["copy"]}"></path></svg>
+                <svg height="16" width="16" class="octicon octicon-check color-fg-success m-2 d-none"><path d="${IconList["check"]}"></path></svg>
+            </clipboard-copy>
+            <div class="copy-feedback">Copied!</div>
+        </div>
+    `;
+
+    const handleCodeElements = (selector = '') => {
+        document.querySelectorAll(selector).forEach(codeElement => {
+            const codeContent = codeElement.innerHTML;
+            const newStructure = document.createElement('div');
+            newStructure.className = 'snippet-clipboard-content position-relative overflow-auto';
+            newStructure.innerHTML = createClipboardHTML(codeContent);
+
+            const parentElement = codeElement.parentElement;
+            if (selector.includes('highlight')) {
+                parentElement.insertBefore(newStructure, codeElement.nextSibling);
+                parentElement.removeChild(codeElement);
+            } else {
+                parentElement.parentElement.replaceChild(newStructure, parentElement);
+            }
+        });
+    };
+
+    handleCodeElements('pre.notranslate > code.notranslate');
+    handleCodeElements('div.highlight > pre.notranslate');
+
+    let currentFeedback = null;
+    document.querySelectorAll('clipboard-copy').forEach(copyButton => {
+        copyButton.addEventListener('click', () => {
+            const codeContent = copyButton.closest('.snippet-clipboard-content').innerText;
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = codeContent;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            const copyIcon = copyButton.querySelector('.octicon-copy');
+            const checkIcon = copyButton.querySelector('.octicon-check');
+            const copyFeedback = copyButton.nextElementSibling;
+
+            if (currentFeedback && currentFeedback !== copyFeedback) {currentFeedback.style.display = 'none';}
+            currentFeedback = copyFeedback;
+
+            copyIcon.classList.add('d-none');
+            checkIcon.classList.remove('d-none');
+            copyFeedback.style.display = 'block';
+            copyButton.style.borderColor = 'var(--color-success-fg)';
+
+            setTimeout(() => {
+                copyIcon.classList.remove('d-none');
+                checkIcon.classList.add('d-none');
+                copyFeedback.style.display = 'none';
+                copyButton.style.borderColor = '';
+            }, 2000);
+        });
+    });
+});
+
+</script>
+
+
+</html>
