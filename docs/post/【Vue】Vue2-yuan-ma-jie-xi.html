@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html data-color-mode="light" data-dark-theme="dark" data-light-theme="light" lang="zh-CN">
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link href='https://mirrors.sustech.edu.cn/cdnjs/ajax/libs/Primer/21.0.7/primer.css' rel='stylesheet' />
+    
+    <link rel="icon" href="https://avatars.githubusercontent.com/u/35625289?v=4"><script>
+        let theme = localStorage.getItem("meek_theme") || "light";
+        document.documentElement.setAttribute("data-color-mode", theme);
+    </script>
+<meta name="description" content="
+## 前言
+
+Vue 作为一款渐进式 JavaScript 框架，其核心原理包括响应式系统、虚拟 DOM、模板编译和组件系统等。">
+<meta property="og:title" content="【Vue】Vue2源码解析">
+<meta property="og:description" content="
+## 前言
+
+Vue 作为一款渐进式 JavaScript 框架，其核心原理包括响应式系统、虚拟 DOM、模板编译和组件系统等。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://199yjy.github.io/record.github.io/post/%E3%80%90Vue%E3%80%91Vue2-yuan-ma-jie-xi.html">
+<meta property="og:image" content="https://avatars.githubusercontent.com/u/35625289?v=4">
+<title>【Vue】Vue2源码解析</title>
+<link href="//unpkg.com/@wooorm/starry-night@2.1.1/style/both.css" rel="stylesheet" />
+
+
+</head>
+<style>
+body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;padding: 45px;font-size: 16px;font-family: sans-serif;line-height: 1.25;}
+#header{display:flex;padding-bottom:8px;border-bottom: 1px solid var(--borderColor-muted, var(--color-border-muted));margin-bottom: 16px;}
+#footer {margin-top:64px; text-align: center;font-size: small;}
+
+</style>
+
+<style>
+.postTitle{margin: auto 0;font-size:40px;font-weight:bold;}
+.title-right{display:flex;margin:auto 0 0 auto;}
+.title-right .circle{padding: 14px 16px;margin-right:8px;}
+#postBody{border-bottom: 1px solid var(--color-border-default);padding-bottom:36px;}
+#postBody hr{height:2px;}
+#cmButton{height:48px;margin-top:48px;}
+#comments{margin-top:64px;}
+.g-emoji{font-size:24px;}
+@media (max-width: 600px) {
+    body {padding: 8px;}
+    .postTitle{font-size:24px;}
+}
+.copy-feedback {
+    display: none;
+    position: absolute;
+    top: 10px;
+    right: 50px;
+    color: var(--color-fg-on-emphasis);
+    background-color: var(--color-fg-muted);
+    border-radius: 3px;
+    padding: 5px 8px;
+    font-size: 12px;
+}
+</style>
+
+
+
+
+<body>
+    <div id="header">
+<h1 class="postTitle">【Vue】Vue2源码解析</h1>
+<div class="title-right">
+    <a href="https://199yjy.github.io/record.github.io" id="buttonHome" class="btn btn-invisible circle" title="首页">
+        <svg class="octicon" width="16" height="16">
+            <path id="pathHome" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+    
+    <a href="https://github.com/199yjy/record.github.io/issues/12" target="_blank" class="btn btn-invisible circle" title="Issue">
+        <svg class="octicon" width="16" height="16">
+            <path id="pathIssue" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+    
+
+    <a class="btn btn-invisible circle" onclick="modeSwitch();" title="切换主题">
+        <svg class="octicon" width="16" height="16" >
+            <path id="themeSwitch" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+
+</div>
+</div>
+    <div id="content">
+<div class="markdown-body" id="postBody"><h2>前言</h2>
+<p>Vue 作为一款渐进式 JavaScript 框架，其核心原理包括响应式系统、虚拟 DOM、模板编译和组件系统等。</p>
+<h2>一、Vue 实例初始化过程</h2>
+<p>Vue 实例的创建是一切的开始，让我们从 <code class="notranslate">Vue</code> 构造函数和 <code class="notranslate">_init</code> 方法开始解析。</p>
+<h3>1.1 Vue 构造函数</h3>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-k">function</span> <span class="pl-v">Vue</span><span class="pl-kos">(</span><span class="pl-s1">options</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+  <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">process</span><span class="pl-kos">.</span><span class="pl-c1">env</span><span class="pl-kos">.</span><span class="pl-c1">NODE_ENV</span> <span class="pl-c1">!==</span> <span class="pl-s">'production'</span> <span class="pl-c1">&amp;&amp;</span>
+    <span class="pl-c1">!</span><span class="pl-kos">(</span><span class="pl-smi">this</span> <span class="pl-k">instanceof</span> <span class="pl-v">Vue</span><span class="pl-kos">)</span>
+  <span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-en">warn</span><span class="pl-kos">(</span><span class="pl-s">'Vue is a constructor and should be called with the `new` keyword'</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+  <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-en">_init</span><span class="pl-kos">(</span><span class="pl-s1">options</span><span class="pl-kos">)</span>
+<span class="pl-kos">}</span></pre></div>
+<p>这段代码是 Vue 构造函数的核心，主要做了两件事：</p>
+<ol>
+<li>在开发环境下检查是否使用 <code class="notranslate">new</code> 关键字调用 Vue 构造函数</li>
+<li>调用 <code class="notranslate">_init</code> 方法进行实例初始化</li>
+</ol>
+<h3>1.2 _init 方法详解</h3>
+<p><code class="notranslate">_init</code> 方法是 Vue 实例初始化的入口，定义在 <code class="notranslate">src/core/instance/init.js</code> 中：</p>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-v">Vue</span><span class="pl-kos">.</span><span class="pl-c1">prototype</span><span class="pl-kos">.</span><span class="pl-en">_init</span> <span class="pl-c1">=</span> <span class="pl-k">function</span> <span class="pl-kos">(</span><span class="pl-s1">options</span>?: <span class="pl-v">Object</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+  <span class="pl-k">const</span> <span class="pl-s1">vm</span>: <span class="pl-v">Component</span> <span class="pl-c1">=</span> <span class="pl-smi">this</span>
+  <span class="pl-c">// 为每个实例分配唯一标识</span>
+  <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">_uid</span> <span class="pl-c1">=</span> <span class="pl-s1">uid</span><span class="pl-c1">++</span>
+  
+  <span class="pl-c">// 性能埋点（开发环境）</span>
+  <span class="pl-k">let</span> <span class="pl-s1">startTag</span><span class="pl-kos">,</span> <span class="pl-s1">endTag</span>
+  <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">process</span><span class="pl-kos">.</span><span class="pl-c1">env</span><span class="pl-kos">.</span><span class="pl-c1">NODE_ENV</span> <span class="pl-c1">!==</span> <span class="pl-s">'production'</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-s1">config</span><span class="pl-kos">.</span><span class="pl-c1">performance</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-s1">mark</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-s1">startTag</span> <span class="pl-c1">=</span> <span class="pl-s">`vue-perf-start:<span class="pl-s1"><span class="pl-kos">${</span><span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">_uid</span><span class="pl-kos">}</span></span>`</span>
+    <span class="pl-s1">endTag</span> <span class="pl-c1">=</span> <span class="pl-s">`vue-perf-end:<span class="pl-s1"><span class="pl-kos">${</span><span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">_uid</span><span class="pl-kos">}</span></span>`</span>
+    <span class="pl-en">mark</span><span class="pl-kos">(</span><span class="pl-s1">startTag</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-c">// 标记为 Vue 实例，避免被响应式系统观测</span>
+  <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">_isVue</span> <span class="pl-c1">=</span> <span class="pl-c1">true</span>
+  
+  <span class="pl-c">// 合并配置选项</span>
+  <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">options</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-s1">options</span><span class="pl-kos">.</span><span class="pl-c1">_isComponent</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-c">// 组件实例的优化合并</span>
+    <span class="pl-en">initInternalComponent</span><span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">,</span> <span class="pl-s1">options</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span> <span class="pl-k">else</span> <span class="pl-kos">{</span>
+    <span class="pl-c">// 根实例的配置合并</span>
+    <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">$options</span> <span class="pl-c1">=</span> <span class="pl-en">mergeOptions</span><span class="pl-kos">(</span>
+      <span class="pl-en">resolveConstructorOptions</span><span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">constructor</span><span class="pl-kos">)</span><span class="pl-kos">,</span>
+      <span class="pl-s1">options</span> <span class="pl-c1">||</span> <span class="pl-kos">{</span><span class="pl-kos">}</span><span class="pl-kos">,</span>
+      <span class="pl-s1">vm</span>
+    <span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+  
+  <span class="pl-c">// 初始化代理（开发环境有额外的警告处理）</span>
+  <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">process</span><span class="pl-kos">.</span><span class="pl-c1">env</span><span class="pl-kos">.</span><span class="pl-c1">NODE_ENV</span> <span class="pl-c1">!==</span> <span class="pl-s">'production'</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-en">initProxy</span><span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span> <span class="pl-k">else</span> <span class="pl-kos">{</span>
+    <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">_renderProxy</span> <span class="pl-c1">=</span> <span class="pl-s1">vm</span>
+  <span class="pl-kos">}</span>
+  
+  <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">_self</span> <span class="pl-c1">=</span> <span class="pl-s1">vm</span>
+  
+  <span class="pl-c">// 初始化生命周期</span>
+  <span class="pl-en">initLifecycle</span><span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">)</span>
+  <span class="pl-c">// 初始化事件系统</span>
+  <span class="pl-en">initEvents</span><span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">)</span>
+  <span class="pl-c">// 初始化渲染相关</span>
+  <span class="pl-en">initRender</span><span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">)</span>
+  <span class="pl-c">// 触发 beforeCreate 钩子</span>
+  <span class="pl-en">callHook</span><span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">,</span> <span class="pl-s">'beforeCreate'</span><span class="pl-kos">)</span>
+  <span class="pl-c">// 初始化注入</span>
+  <span class="pl-en">initInjections</span><span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">)</span>
+  <span class="pl-c">// 初始化状态（props, data, methods, computed, watch）</span>
+  <span class="pl-en">initState</span><span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">)</span>
+  <span class="pl-c">// 初始化提供</span>
+  <span class="pl-en">initProvide</span><span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">)</span>
+  <span class="pl-c">// 触发 created 钩子</span>
+  <span class="pl-en">callHook</span><span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">,</span> <span class="pl-s">'created'</span><span class="pl-kos">)</span>
+
+  <span class="pl-c">// 性能统计（开发环境）</span>
+  <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">process</span><span class="pl-kos">.</span><span class="pl-c1">env</span><span class="pl-kos">.</span><span class="pl-c1">NODE_ENV</span> <span class="pl-c1">!==</span> <span class="pl-s">'production'</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-s1">config</span><span class="pl-kos">.</span><span class="pl-c1">performance</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-s1">mark</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">_name</span> <span class="pl-c1">=</span> <span class="pl-en">formatComponentName</span><span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">,</span> <span class="pl-c1">false</span><span class="pl-kos">)</span>
+    <span class="pl-en">mark</span><span class="pl-kos">(</span><span class="pl-s1">endTag</span><span class="pl-kos">)</span>
+    <span class="pl-en">measure</span><span class="pl-kos">(</span><span class="pl-s">`vue <span class="pl-s1"><span class="pl-kos">${</span><span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">_name</span><span class="pl-kos">}</span></span> init`</span><span class="pl-kos">,</span> <span class="pl-s1">startTag</span><span class="pl-kos">,</span> <span class="pl-s1">endTag</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-c">// 如果有 el 选项，则自动挂载</span>
+  <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">$options</span><span class="pl-kos">.</span><span class="pl-c1">el</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-en">$mount</span><span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">$options</span><span class="pl-kos">.</span><span class="pl-c1">el</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+<span class="pl-kos">}</span></pre></div>
+<p><code class="notranslate">_init</code> 方法的执行流程可以总结为：</p>
+<ol>
+<li><strong>准备工作</strong>：生成唯一标识、性能埋点、标记为 Vue 实例</li>
+<li><strong>配置合并</strong>：将用户传入的选项与系统默认选项、全局配置等合并</li>
+<li><strong>核心初始化</strong>：依次初始化生命周期、事件系统、渲染功能</li>
+<li><strong>生命周期触发</strong>：调用 <code class="notranslate">beforeCreate</code> 和 <code class="notranslate">created</code> 钩子函数</li>
+<li><strong>自动挂载</strong>：如果指定了 <code class="notranslate">el</code> 选项，则自动执行挂载流程</li>
+</ol>
+<h2>二、响应式系统原理</h2>
+<p>响应式系统是 Vue 的核心特性之一，它实现了数据变化自动更新视图的功能。</p>
+<h3>2.1 响应式数据的实现</h3>
+<p>响应式系统的核心代码位于 <code class="notranslate">src/core/observer/index.js</code> 中，主要通过 <code class="notranslate">Observer</code> 类实现：</p>
+<div class="highlight highlight-source-js"><pre class="notranslate">export <span class="pl-k">class</span> <span class="pl-v">Observer</span> <span class="pl-kos">{</span>
+  <span class="pl-c1">value</span>: <span class="pl-s1">any</span><span class="pl-kos">;</span>
+  dep: <span class="pl-v">Dep</span><span class="pl-kos">;</span>
+  vmCount: <span class="pl-s1">number</span><span class="pl-kos">;</span> <span class="pl-c">// 记录有多少个 Vue 实例使用了该对象</span>
+
+  <span class="pl-en">constructor</span><span class="pl-kos">(</span><span class="pl-s1">value</span>: <span class="pl-s1">any</span><span class="pl-kos">)</span><span class="pl-kos"></span> <span class="pl-kos">{</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">value</span> <span class="pl-c1">=</span> <span class="pl-s1">value</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">dep</span> <span class="pl-c1">=</span> <span class="pl-k">new</span> <span class="pl-v">Dep</span><span class="pl-kos">(</span><span class="pl-kos">)</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">vmCount</span> <span class="pl-c1">=</span> <span class="pl-c1">0</span>
+    <span class="pl-en">def</span><span class="pl-kos">(</span><span class="pl-s1">value</span><span class="pl-kos">,</span> <span class="pl-s">'__ob__'</span><span class="pl-kos">,</span> <span class="pl-smi">this</span><span class="pl-kos">)</span>
+    
+    <span class="pl-c">// 处理数组</span>
+    <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-v">Array</span><span class="pl-kos">.</span><span class="pl-en">isArray</span><span class="pl-kos">(</span><span class="pl-s1">value</span><span class="pl-kos">)</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+      <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">hasProto</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+        <span class="pl-en">protoAugment</span><span class="pl-kos">(</span><span class="pl-s1">value</span><span class="pl-kos">,</span> <span class="pl-s1">arrayMethods</span><span class="pl-kos">)</span>
+      <span class="pl-kos">}</span> <span class="pl-k">else</span> <span class="pl-kos">{</span>
+        <span class="pl-en">copyAugment</span><span class="pl-kos">(</span><span class="pl-s1">value</span><span class="pl-kos">,</span> <span class="pl-s1">arrayMethods</span><span class="pl-kos">,</span> <span class="pl-s1">arrayKeys</span><span class="pl-kos">)</span>
+      <span class="pl-kos">}</span>
+      <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-en">observeArray</span><span class="pl-kos">(</span><span class="pl-s1">value</span><span class="pl-kos">)</span>
+    <span class="pl-kos">}</span> <span class="pl-k">else</span> <span class="pl-kos">{</span>
+      <span class="pl-c">// 处理对象</span>
+      <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-en">walk</span><span class="pl-kos">(</span><span class="pl-s1">value</span><span class="pl-kos">)</span>
+    <span class="pl-kos">}</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-c">// 遍历对象的每个属性，使其响应式</span>
+  <span class="pl-en">walk</span><span class="pl-kos">(</span><span class="pl-s1">obj</span>: <span class="pl-v">Object</span><span class="pl-kos">)</span><span class="pl-kos"></span> <span class="pl-kos">{</span>
+    <span class="pl-k">const</span> <span class="pl-s1">keys</span> <span class="pl-c1">=</span> <span class="pl-v">Object</span><span class="pl-kos">.</span><span class="pl-en">keys</span><span class="pl-kos">(</span><span class="pl-s1">obj</span><span class="pl-kos">)</span>
+    <span class="pl-k">for</span> <span class="pl-kos">(</span><span class="pl-k">let</span> <span class="pl-s1">i</span> <span class="pl-c1">=</span> <span class="pl-c1">0</span><span class="pl-kos">;</span> <span class="pl-s1">i</span> <span class="pl-c1">&lt;</span> <span class="pl-s1">keys</span><span class="pl-kos">.</span><span class="pl-c1">length</span><span class="pl-kos">;</span> <span class="pl-s1">i</span><span class="pl-c1">++</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+      <span class="pl-en">defineReactive</span><span class="pl-kos">(</span><span class="pl-s1">obj</span><span class="pl-kos">,</span> <span class="pl-s1">keys</span><span class="pl-kos">[</span><span class="pl-s1">i</span><span class="pl-kos">]</span><span class="pl-kos">)</span>
+    <span class="pl-kos">}</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-c">// 遍历数组，为每个元素创建 Observer 实例</span>
+  <span class="pl-s1">observeArray</span><span class="pl-kos">(</span><span class="pl-s1">items</span>: <span class="pl-v">Array</span><span class="pl-c1">&lt;</span><span class="pl-s1">any</span><span class="pl-c1">&gt;</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-en">for</span> <span class="pl-kos">(</span><span class="pl-s1">let</span> <span class="pl-s1">i</span> <span class="pl-c1">=</span> <span class="pl-c1">0</span><span class="pl-kos">,</span> <span class="pl-s1">l</span> <span class="pl-c1">=</span> <span class="pl-s1">items</span><span class="pl-kos">.</span><span class="pl-c1">length</span><span class="pl-kos">;</span> <span class="pl-s1">i</span> <span class="pl-c1">&lt;</span> <span class="pl-s1">l</span><span class="pl-kos">;</span> <span class="pl-s1">i</span><span class="pl-c1">++</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+      <span class="pl-en">observe</span><span class="pl-kos">(</span><span class="pl-s1">items</span><span class="pl-kos">[</span><span class="pl-s1">i</span><span class="pl-kos">]</span><span class="pl-kos">)</span>
+    <span class="pl-kos">}</span>
+  <span class="pl-kos">}</span>
+<span class="pl-kos">}</span></pre></div>
+<h3>2.2 依赖收集与派发更新</h3>
+<p><code class="notranslate">defineReactive</code> 函数是实现对象属性响应式的关键：</p>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-k">function</span> <span class="pl-s1">defineReactive</span><span class="pl-kos">(</span>
+  <span class="pl-s1">obj</span>: <span class="pl-v">Object</span><span class="pl-kos">,</span>
+  <span class="pl-s1">key</span>: <span class="pl-s1">string</span><span class="pl-kos">,</span>
+  <span class="pl-s1">val</span>: <span class="pl-s1">any</span><span class="pl-kos">,</span>
+  <span class="pl-s1">customSetter</span>?: ?<span class="pl-v">Function</span><span class="pl-kos">,</span>
+  <span class="pl-s1">shallow</span>?: <span class="pl-s1">boolean</span>
+<span class="pl-kos">)</span> <span class="pl-kos">{</span>
+  <span class="pl-k">const</span> <span class="pl-s1">dep</span> <span class="pl-c1">=</span> <span class="pl-k">new</span> <span class="pl-v">Dep</span><span class="pl-kos">(</span><span class="pl-kos">)</span>
+
+  <span class="pl-s1">const</span> <span class="pl-s1">property</span> <span class="pl-c1">=</span> <span class="pl-v">Object</span><span class="pl-kos">.</span><span class="pl-en">getOwnPropertyDescriptor</span><span class="pl-kos">(</span><span class="pl-s1">obj</span><span class="pl-kos">,</span> <span class="pl-s1">key</span><span class="pl-kos">)</span>
+  <span class="pl-en">if</span> <span class="pl-kos">(</span><span class="pl-s1">property</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-s1">property</span><span class="pl-kos">.</span><span class="pl-c1">configurable</span> <span class="pl-c1">===</span> <span class="pl-c1">false</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    return
+  <span class="pl-kos">}</span>
+
+  <span class="pl-c">// 保存原有的 getter 和 setter</span>
+  <span class="pl-s1">const</span> <span class="pl-s1">getter</span> <span class="pl-c1">=</span> <span class="pl-s1">property</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-s1">property</span><span class="pl-kos">.</span><span class="pl-c1">get</span>
+  <span class="pl-s1">const</span> <span class="pl-s1">setter</span> <span class="pl-c1">=</span> <span class="pl-s1">property</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-s1">property</span><span class="pl-kos">.</span><span class="pl-en">set</span>
+  <span class="pl-s1">if</span> <span class="pl-kos">(</span><span class="pl-kos">(</span><span class="pl-c1">!</span><span class="pl-s1">getter</span> <span class="pl-c1">||</span> <span class="pl-s1">setter</span><span class="pl-kos">)</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-smi">arguments</span><span class="pl-kos">.</span><span class="pl-c1">length</span> <span class="pl-c1">===</span> <span class="pl-c1">2</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    val <span class="pl-c1">=</span> <span class="pl-s1">obj</span><span class="pl-kos">[</span><span class="pl-s1">key</span><span class="pl-kos">]</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-c">// 递归观察子属性，实现深度响应式</span>
+  <span class="pl-s1">let</span> <span class="pl-s1">childOb</span> <span class="pl-c1">=</span> <span class="pl-c1">!</span><span class="pl-s1">shallow</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-en">observe</span><span class="pl-kos">(</span><span class="pl-s1">val</span><span class="pl-kos">)</span>
+  
+  <span class="pl-v">Object</span><span class="pl-kos">.</span><span class="pl-en">defineProperty</span><span class="pl-kos">(</span><span class="pl-s1">obj</span><span class="pl-kos">,</span> <span class="pl-s1">key</span><span class="pl-kos">,</span> <span class="pl-kos">{</span>
+    <span class="pl-c1">enumerable</span>: <span class="pl-c1">true</span><span class="pl-kos">,</span>
+    <span class="pl-c1">configurable</span>: <span class="pl-c1">true</span><span class="pl-kos">,</span>
+    <span class="pl-en">get</span>: <span class="pl-k">function</span> <span class="pl-en">reactiveGetter</span><span class="pl-kos">(</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+      <span class="pl-k">const</span> <span class="pl-s1">value</span> <span class="pl-c1">=</span> <span class="pl-s1">getter</span> ? <span class="pl-s1">getter</span><span class="pl-kos">.</span><span class="pl-en">call</span><span class="pl-kos">(</span><span class="pl-s1">obj</span><span class="pl-kos">)</span> : <span class="pl-s1">val</span>
+      
+      <span class="pl-c">// 依赖收集：如果存在当前正在计算的 Watcher，则建立依赖关系</span>
+      <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-v">Dep</span><span class="pl-kos">.</span><span class="pl-c1">target</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+        <span class="pl-s1">dep</span><span class="pl-kos">.</span><span class="pl-en">depend</span><span class="pl-kos">(</span><span class="pl-kos">)</span>
+        <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">childOb</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+          <span class="pl-s1">childOb</span><span class="pl-kos">.</span><span class="pl-c1">dep</span><span class="pl-kos">.</span><span class="pl-en">depend</span><span class="pl-kos">(</span><span class="pl-kos">)</span>
+          <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-v">Array</span><span class="pl-kos">.</span><span class="pl-en">isArray</span><span class="pl-kos">(</span><span class="pl-s1">value</span><span class="pl-kos">)</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+            <span class="pl-en">dependArray</span><span class="pl-kos">(</span><span class="pl-s1">value</span><span class="pl-kos">)</span>
+          <span class="pl-kos">}</span>
+        <span class="pl-kos">}</span>
+      <span class="pl-kos">}</span>
+      <span class="pl-k">return</span> <span class="pl-s1">value</span>
+    <span class="pl-kos">}</span><span class="pl-kos">,</span>
+    <span class="pl-en">set</span>: <span class="pl-k">function</span> <span class="pl-en">reactiveSetter</span><span class="pl-kos">(</span><span class="pl-s1">newVal</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+      <span class="pl-k">const</span> <span class="pl-s1">value</span> <span class="pl-c1">=</span> <span class="pl-s1">getter</span> ? <span class="pl-s1">getter</span><span class="pl-kos">.</span><span class="pl-en">call</span><span class="pl-kos">(</span><span class="pl-s1">obj</span><span class="pl-kos">)</span> : <span class="pl-s1">val</span>
+      
+      <span class="pl-c">// 如果新值与旧值相同，则不做处理</span>
+      <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">newVal</span> <span class="pl-c1">===</span> <span class="pl-s1">value</span> <span class="pl-c1">||</span> <span class="pl-kos">(</span><span class="pl-s1">newVal</span> <span class="pl-c1">!==</span> <span class="pl-s1">newVal</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-s1">value</span> <span class="pl-c1">!==</span> <span class="pl-s1">value</span><span class="pl-kos">)</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+        <span class="pl-k">return</span>
+      <span class="pl-kos">}</span>
+      
+      <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">process</span><span class="pl-kos">.</span><span class="pl-c1">env</span><span class="pl-kos">.</span><span class="pl-c1">NODE_ENV</span> <span class="pl-c1">!==</span> <span class="pl-s">'production'</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-s1">customSetter</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+        <span class="pl-en">customSetter</span><span class="pl-kos">(</span><span class="pl-kos">)</span>
+      <span class="pl-kos">}</span>
+      
+      <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">setter</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+        <span class="pl-s1">setter</span><span class="pl-kos">.</span><span class="pl-en">call</span><span class="pl-kos">(</span><span class="pl-s1">obj</span><span class="pl-kos">,</span> <span class="pl-s1">newVal</span><span class="pl-kos">)</span>
+      <span class="pl-kos">}</span> <span class="pl-k">else</span> <span class="pl-kos">{</span>
+        <span class="pl-s1">val</span> <span class="pl-c1">=</span> <span class="pl-s1">newVal</span>
+      <span class="pl-kos">}</span>
+      
+      <span class="pl-c">// 观察新值，使其响应式</span>
+      <span class="pl-s1">childOb</span> <span class="pl-c1">=</span> <span class="pl-c1">!</span><span class="pl-s1">shallow</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-en">observe</span><span class="pl-kos">(</span><span class="pl-s1">newVal</span><span class="pl-kos">)</span>
+      
+      <span class="pl-c">// 派发更新：通知所有依赖该属性的 Watcher 进行更新</span>
+      <span class="pl-s1">dep</span><span class="pl-kos">.</span><span class="pl-en">notify</span><span class="pl-kos">(</span><span class="pl-kos">)</span>
+    <span class="pl-kos">}</span>
+  <span class="pl-kos">}</span><span class="pl-kos">)</span>
+<span class="pl-kos">}</span></pre></div>
+<p>响应式系统的工作流程：</p>
+<ol>
+<li><strong>数据劫持</strong>：通过 <code class="notranslate">Object.defineProperty</code> 重写对象属性的 <code class="notranslate">getter</code> 和 <code class="notranslate">setter</code></li>
+<li><strong>依赖收集</strong>：当属性被访问时（触发 <code class="notranslate">getter</code>），收集依赖该属性的 Watcher</li>
+<li><strong>派发更新</strong>：当属性被修改时（触发 <code class="notranslate">setter</code>），通知所有依赖该属性的 Watcher 执行更新</li>
+</ol>
+<h2>三、虚拟 DOM 与渲染过程</h2>
+<p>Vue 通过虚拟 DOM 来提高渲染性能，减少直接操作 DOM 的开销。</p>
+<h3>3.1 VNode 类</h3>
+<p>虚拟 DOM 的核心是 <code class="notranslate">VNode</code> 类，定义在 <code class="notranslate">src/core/vdom/vnode.js</code> 中：</p>
+<div class="highlight highlight-source-js"><pre class="notranslate">export <span class="pl-k">default</span> <span class="pl-k">class</span> <span class="pl-v">VNode</span> <span class="pl-kos">{</span>
+  <span class="pl-c1">tag</span>: <span class="pl-s1">string</span> <span class="pl-c1">|</span> <span class="pl-k">void</span><span class="pl-s1"></span><span class="pl-kos">;</span>
+  data: <span class="pl-v">VNodeData</span> <span class="pl-c1">|</span> <span class="pl-k">void</span><span class="pl-s1"></span><span class="pl-kos">;</span>
+  children: ?<span class="pl-v">Array</span><span class="pl-c1">&lt;</span><span class="pl-v">VNode</span><span class="pl-c1">&gt;</span><span class="pl-kos">;</span>
+  text: <span class="pl-s1">string</span> <span class="pl-c1">|</span> <span class="pl-k">void</span><span class="pl-s1"></span><span class="pl-kos">;</span>
+  elm: <span class="pl-v">Node</span> <span class="pl-c1">|</span> <span class="pl-k">void</span><span class="pl-s1"></span><span class="pl-kos">;</span>
+  ns: <span class="pl-s1">string</span> <span class="pl-c1">|</span> <span class="pl-k">void</span><span class="pl-s1"></span><span class="pl-kos">;</span>
+  context: <span class="pl-v">Component</span> <span class="pl-c1">|</span> <span class="pl-k">void</span><span class="pl-s1"></span><span class="pl-kos">;</span> <span class="pl-c">// rendered in this component's scope</span>
+  key: <span class="pl-s1">string</span> <span class="pl-c1">|</span> <span class="pl-s1">number</span> <span class="pl-c1">|</span> <span class="pl-k">void</span><span class="pl-s1"></span><span class="pl-kos">;</span>
+  componentOptions: <span class="pl-v">VNodeComponentOptions</span> <span class="pl-c1">|</span> <span class="pl-k">void</span><span class="pl-s1"></span><span class="pl-kos">;</span>
+  componentInstance: <span class="pl-v">Component</span> <span class="pl-c1">|</span> <span class="pl-k">void</span><span class="pl-s1"></span><span class="pl-kos">;</span> <span class="pl-c">// component instance</span>
+  parent: <span class="pl-v">VNode</span> <span class="pl-c1">|</span> <span class="pl-k">void</span><span class="pl-s1"></span><span class="pl-kos">;</span> <span class="pl-c">// component placeholder node</span>
+  raw: <span class="pl-s1">boolean</span><span class="pl-kos">;</span> <span class="pl-c">// contains raw HTML? (server only)</span>
+  isStatic: <span class="pl-s1">boolean</span><span class="pl-kos">;</span> <span class="pl-c">// hoisted static node</span>
+  isRootInsert: <span class="pl-s1">boolean</span><span class="pl-kos">;</span> <span class="pl-c">// necessary for enter transition check</span>
+  isComment: <span class="pl-s1">boolean</span><span class="pl-kos">;</span> <span class="pl-c">// empty comment placeholder?</span>
+  isCloned: <span class="pl-s1">boolean</span><span class="pl-kos">;</span> <span class="pl-c">// is a cloned node?</span>
+  isOnce: <span class="pl-s1">boolean</span><span class="pl-kos">;</span> <span class="pl-c">// is a v-once node?</span>
+  asyncFactory: <span class="pl-v">Function</span> <span class="pl-c1">|</span> <span class="pl-k">void</span><span class="pl-s1"></span><span class="pl-kos">;</span> <span class="pl-c">// async component factory function</span>
+  asyncMeta: <span class="pl-v">Object</span> <span class="pl-c1">|</span> <span class="pl-k">void</span><span class="pl-s1"></span><span class="pl-kos">;</span>
+  isAsyncPlaceholder: <span class="pl-s1">boolean</span><span class="pl-kos">;</span>
+  ssrContext: <span class="pl-v">Object</span> <span class="pl-c1">|</span> <span class="pl-k">void</span><span class="pl-s1"></span><span class="pl-kos">;</span>
+  fnContext: <span class="pl-v">Component</span> <span class="pl-c1">|</span> <span class="pl-k">void</span><span class="pl-s1"></span><span class="pl-kos">;</span> <span class="pl-c">// real context vm for functional nodes</span>
+  fnOptions: ?<span class="pl-v">ComponentOptions</span><span class="pl-kos">;</span> <span class="pl-c">// for SSR caching</span>
+  devtoolsMeta: ?<span class="pl-v">Object</span><span class="pl-kos">;</span> <span class="pl-c">// used to store functional render context for devtools</span>
+  fnScopeId: ?<span class="pl-s1">string</span><span class="pl-kos">;</span> <span class="pl-c">// functional scope id support</span>
+
+  <span class="pl-en">constructor</span><span class="pl-kos">(</span>
+    <span class="pl-s1">tag</span>?<span class="pl-s1"></span>: <span class="pl-s1">string</span><span class="pl-kos">,</span>
+    <span class="pl-s1">data</span>?<span class="pl-s1"></span>: <span class="pl-v">VNodeData</span><span class="pl-kos">,</span>
+    <span class="pl-s1">children</span>?: ?<span class="pl-v">Array</span><span class="pl-c1">&lt;</span><span class="pl-v">VNode</span><span class="pl-c1">&gt;</span><span class="pl-kos">,</span>
+    <span class="pl-s1">text</span>?: <span class="pl-s1">string</span><span class="pl-kos">,</span>
+    <span class="pl-s1">elm</span>?<span class="pl-s1"></span>: <span class="pl-v">Node</span><span class="pl-kos">,</span>
+    <span class="pl-s1">context</span>?<span class="pl-s1"></span>: <span class="pl-v">Component</span><span class="pl-kos">,</span>
+    <span class="pl-s1">componentOptions</span>?<span class="pl-s1"></span>: <span class="pl-v">VNodeComponentOptions</span><span class="pl-kos">,</span>
+    <span class="pl-s1">asyncFactory</span>?<span class="pl-s1"></span>: <span class="pl-v">Function</span>
+  <span class="pl-kos">)</span><span class="pl-kos"></span> <span class="pl-kos">{</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">tag</span> <span class="pl-c1">=</span> <span class="pl-s1">tag</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">data</span> <span class="pl-c1">=</span> <span class="pl-s1">data</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">children</span> <span class="pl-c1">=</span> <span class="pl-s1">children</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">text</span> <span class="pl-c1">=</span> <span class="pl-s1">text</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">elm</span> <span class="pl-c1">=</span> <span class="pl-s1">elm</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">ns</span> <span class="pl-c1">=</span> <span class="pl-c1">undefined</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">context</span> <span class="pl-c1">=</span> <span class="pl-s1">context</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">key</span> <span class="pl-c1">=</span> <span class="pl-s1">data</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-s1">data</span><span class="pl-kos">.</span><span class="pl-c1">key</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">componentOptions</span> <span class="pl-c1">=</span> <span class="pl-s1">componentOptions</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">componentInstance</span> <span class="pl-c1">=</span> <span class="pl-c1">undefined</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">parent</span> <span class="pl-c1">=</span> <span class="pl-c1">undefined</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">raw</span> <span class="pl-c1">=</span> <span class="pl-c1">false</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">isStatic</span> <span class="pl-c1">=</span> <span class="pl-c1">false</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">isRootInsert</span> <span class="pl-c1">=</span> <span class="pl-c1">true</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">isComment</span> <span class="pl-c1">=</span> <span class="pl-c1">false</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">isCloned</span> <span class="pl-c1">=</span> <span class="pl-c1">false</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">isOnce</span> <span class="pl-c1">=</span> <span class="pl-c1">false</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">asyncFactory</span> <span class="pl-c1">=</span> <span class="pl-s1">asyncFactory</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">asyncMeta</span> <span class="pl-c1">=</span> <span class="pl-c1">undefined</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">isAsyncPlaceholder</span> <span class="pl-c1">=</span> <span class="pl-c1">false</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-c">// 便利方法：创建空的注释节点</span>
+  <span class="pl-s1">static</span><span class="pl-kos"></span> <span class="pl-en">createEmptyVNode</span><span class="pl-kos">(</span><span class="pl-s1">text</span>: <span class="pl-s1">string</span> <span class="pl-c1">=</span> <span class="pl-s">''</span><span class="pl-kos">)</span>: <span class="pl-v">VNode</span> <span class="pl-kos">{</span>
+    <span class="pl-k">const</span> <span class="pl-s1">node</span> <span class="pl-c1">=</span> <span class="pl-k">new</span> <span class="pl-v">VNode</span><span class="pl-kos">(</span><span class="pl-kos">)</span>
+    <span class="pl-s1">node</span><span class="pl-kos">.</span><span class="pl-c1">text</span> <span class="pl-c1">=</span> <span class="pl-s1">text</span>
+    <span class="pl-s1">node</span><span class="pl-kos">.</span><span class="pl-c1">isComment</span> <span class="pl-c1">=</span> <span class="pl-c1">true</span>
+    <span class="pl-k">return</span> <span class="pl-s1">node</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-c">// 便利方法：创建文本节点</span>
+  <span class="pl-s1">static</span><span class="pl-kos"></span> <span class="pl-en">createTextVNode</span><span class="pl-kos">(</span><span class="pl-s1">val</span>: <span class="pl-s1">string</span> <span class="pl-c1">|</span> <span class="pl-s1">number</span><span class="pl-kos">)</span>: <span class="pl-v">VNode</span> <span class="pl-kos">{</span>
+    <span class="pl-k">return</span> <span class="pl-k">new</span> <span class="pl-v">VNode</span><span class="pl-kos">(</span><span class="pl-c1">undefined</span><span class="pl-kos">,</span> <span class="pl-c1">undefined</span><span class="pl-kos">,</span> <span class="pl-c1">undefined</span><span class="pl-kos">,</span> <span class="pl-v">String</span><span class="pl-kos">(</span><span class="pl-s1">val</span><span class="pl-kos">)</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+<span class="pl-kos">}</span></pre></div>
+<p><code class="notranslate">VNode</code> 是对真实 DOM 节点的抽象表示，包含了标签名、数据、子节点等信息。</p>
+<h3>3.2 渲染过程</h3>
+<p>Vue 的渲染过程主要分为三个步骤：</p>
+<ol>
+<li><strong>模板编译</strong>：将模板字符串编译为渲染函数</li>
+<li><strong>生成 VNode</strong>：执行渲染函数生成虚拟 DOM</li>
+<li><strong>patch 过程</strong>：将虚拟 DOM 转换为真实 DOM，并处理更新</li>
+</ol>
+<p><code class="notranslate">$mount</code> 方法是触发渲染过程的入口：</p>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-v">Vue</span><span class="pl-kos">.</span><span class="pl-c1">prototype</span><span class="pl-kos">.</span><span class="pl-c1">$mount</span> <span class="pl-c1">=</span> <span class="pl-k">function</span> <span class="pl-kos">(</span>
+  <span class="pl-s1">el</span>?: <span class="pl-s1">string</span> <span class="pl-c1">|</span> <span class="pl-v">Element</span><span class="pl-kos">,</span>
+  <span class="pl-s1">hydrating</span>?: <span class="pl-s1">boolean</span>
+<span class="pl-kos">)</span>: <span class="pl-v">Component</span> <span class="pl-kos">{</span>
+  el <span class="pl-c1">=</span> <span class="pl-s1">el</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-s1">inBrowser</span> ? <span class="pl-en">query</span><span class="pl-kos">(</span><span class="pl-s1">el</span><span class="pl-kos">)</span> : <span class="pl-c1">undefined</span>
+  <span class="pl-s1">return</span> <span class="pl-s1">mountComponent</span><span class="pl-kos">(</span><span class="pl-smi">this</span><span class="pl-kos">,</span> <span class="pl-s1">el</span><span class="pl-kos">,</span> <span class="pl-s1">hydrating</span><span class="pl-kos">)</span>
+<span class="pl-kos">}</span>
+
+<span class="pl-k">function</span> <span class="pl-s1">mountComponent</span><span class="pl-kos">(</span>
+  <span class="pl-s1">vm</span>: <span class="pl-v">Component</span><span class="pl-kos">,</span>
+  <span class="pl-s1">el</span>: ?<span class="pl-v">Element</span><span class="pl-kos">,</span>
+  <span class="pl-s1">hydrating</span>?: <span class="pl-s1">boolean</span>
+<span class="pl-kos">)</span>: <span class="pl-v">Component</span> <span class="pl-kos">{</span>
+  <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">$el</span> <span class="pl-c1">=</span> <span class="pl-s1">el</span>
+  <span class="pl-en">if</span> <span class="pl-kos">(</span><span class="pl-c1">!</span><span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">$options</span><span class="pl-kos">.</span><span class="pl-c1">render</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-c">// 如果没有 render 函数，创建一个默认的</span>
+    vm<span class="pl-kos"></span><span class="pl-kos">.</span><span class="pl-c1">$options</span><span class="pl-kos">.</span><span class="pl-c1">render</span> <span class="pl-c1">=</span> <span class="pl-s1">createEmptyVNode</span>
+    <span class="pl-c">// ... 警告处理</span>
+  <span class="pl-kos">}</span>
+  
+  <span class="pl-c">// 触发 beforeMount 钩子</span>
+  <span class="pl-en">callHook</span><span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">,</span> <span class="pl-s">'beforeMount'</span><span class="pl-kos">)</span>
+
+  <span class="pl-s1">let</span> <span class="pl-s1">updateComponent</span>
+  <span class="pl-c">/* istanbul ignore if */</span>
+  <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">process</span><span class="pl-kos">.</span><span class="pl-c1">env</span><span class="pl-kos">.</span><span class="pl-c1">NODE_ENV</span> <span class="pl-c1">!==</span> <span class="pl-s">'production'</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-s1">config</span><span class="pl-kos">.</span><span class="pl-c1">performance</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-s1">mark</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-c">// 性能埋点</span>
+    updateComponent <span class="pl-c1">=</span> <span class="pl-kos">(</span><span class="pl-kos">)</span> <span class="pl-c1">=&gt;</span> <span class="pl-kos">{</span>
+      <span class="pl-k">const</span> <span class="pl-s1">name</span> <span class="pl-c1">=</span> <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">_name</span>
+      <span class="pl-k">const</span> <span class="pl-s1">id</span> <span class="pl-c1">=</span> <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">_uid</span>
+      <span class="pl-k">const</span> <span class="pl-s1">startTag</span> <span class="pl-c1">=</span> <span class="pl-s">`vue-perf-start:<span class="pl-s1"><span class="pl-kos">${</span><span class="pl-s1">id</span><span class="pl-kos">}</span></span>`</span>
+      <span class="pl-k">const</span> <span class="pl-s1">endTag</span> <span class="pl-c1">=</span> <span class="pl-s">`vue-perf-end:<span class="pl-s1"><span class="pl-kos">${</span><span class="pl-s1">id</span><span class="pl-kos">}</span></span>`</span>
+
+      <span class="pl-en">mark</span><span class="pl-kos">(</span><span class="pl-s1">startTag</span><span class="pl-kos">)</span>
+      <span class="pl-k">const</span> <span class="pl-s1">vnode</span> <span class="pl-c1">=</span> <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-en">_render</span><span class="pl-kos">(</span><span class="pl-kos">)</span>
+      <span class="pl-en">mark</span><span class="pl-kos">(</span><span class="pl-s1">endTag</span><span class="pl-kos">)</span>
+      <span class="pl-en">measure</span><span class="pl-kos">(</span><span class="pl-s">`vue <span class="pl-s1"><span class="pl-kos">${</span><span class="pl-s1">name</span><span class="pl-kos">}</span></span> render`</span><span class="pl-kos">,</span> <span class="pl-s1">startTag</span><span class="pl-kos">,</span> <span class="pl-s1">endTag</span><span class="pl-kos">)</span>
+
+      <span class="pl-en">mark</span><span class="pl-kos">(</span><span class="pl-s1">startTag</span><span class="pl-kos">)</span>
+      <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-en">_update</span><span class="pl-kos">(</span><span class="pl-s1">vnode</span><span class="pl-kos">,</span> <span class="pl-s1">hydrating</span><span class="pl-kos">)</span>
+      <span class="pl-en">mark</span><span class="pl-kos">(</span><span class="pl-s1">endTag</span><span class="pl-kos">)</span>
+      <span class="pl-en">measure</span><span class="pl-kos">(</span><span class="pl-s">`vue <span class="pl-s1"><span class="pl-kos">${</span><span class="pl-s1">name</span><span class="pl-kos">}</span></span> patch`</span><span class="pl-kos">,</span> <span class="pl-s1">startTag</span><span class="pl-kos">,</span> <span class="pl-s1">endTag</span><span class="pl-kos">)</span>
+    <span class="pl-kos">}</span>
+  <span class="pl-kos">}</span> <span class="pl-s1">else</span> <span class="pl-kos">{</span>
+    <span class="pl-c">// 定义更新组件的函数</span>
+    <span class="pl-s1">updateComponent</span> <span class="pl-c1">=</span> <span class="pl-kos">(</span><span class="pl-kos">)</span> <span class="pl-c1">=&gt;</span> <span class="pl-kos">{</span>
+      <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-en">_update</span><span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-en">_render</span><span class="pl-kos">(</span><span class="pl-kos">)</span><span class="pl-kos">,</span> <span class="pl-s1">hydrating</span><span class="pl-kos">)</span>
+    <span class="pl-kos">}</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-c">// 创建 Watcher 实例，监听数据变化并触发更新</span>
+  <span class="pl-k">new</span> <span class="pl-v">Watcher</span><span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">,</span> <span class="pl-s1">updateComponent</span><span class="pl-kos">,</span> <span class="pl-s1">noop</span><span class="pl-kos">,</span> <span class="pl-kos">{</span>
+    <span class="pl-en">before</span><span class="pl-kos">(</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+      <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">_isMounted</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-c1">!</span><span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">_isDestroyed</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+        <span class="pl-en">callHook</span><span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">,</span> <span class="pl-s">'beforeUpdate'</span><span class="pl-kos">)</span>
+      <span class="pl-kos">}</span>
+    <span class="pl-kos">}</span>
+  <span class="pl-kos">}</span><span class="pl-kos">,</span> <span class="pl-c1">true</span> <span class="pl-c">/* isRenderWatcher */</span><span class="pl-kos">)</span>
+  <span class="pl-s1">hydrating</span> <span class="pl-c1">=</span> <span class="pl-c1">false</span>
+
+  <span class="pl-c">// 触发 mounted 钩子</span>
+  <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">$vnode</span> <span class="pl-c1">==</span> <span class="pl-c1">null</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">_isMounted</span> <span class="pl-c1">=</span> <span class="pl-c1">true</span>
+    <span class="pl-en">callHook</span><span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">,</span> <span class="pl-s">'mounted'</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+  <span class="pl-k">return</span> <span class="pl-s1">vm</span>
+<span class="pl-kos">}</span></pre></div>
+<p><code class="notranslate">_render</code> 方法生成 VNode：</p>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-v">Vue</span><span class="pl-kos">.</span><span class="pl-c1">prototype</span><span class="pl-kos">.</span><span class="pl-c1">_render</span> <span class="pl-c1">=</span> <span class="pl-k">function</span> <span class="pl-kos">(</span><span class="pl-kos">)</span>: <span class="pl-v">VNode</span> <span class="pl-kos">{</span>
+  <span class="pl-k">const</span> <span class="pl-s1">vm</span>: <span class="pl-v">Component</span> <span class="pl-c1">=</span> <span class="pl-smi">this</span>
+  <span class="pl-k">const</span> <span class="pl-kos">{</span> render<span class="pl-kos">,</span> _parentVnode <span class="pl-kos">}</span> <span class="pl-c1">=</span> <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">$options</span>
+
+  <span class="pl-c">// ... 处理父节点等逻辑</span>
+
+  <span class="pl-c">// 设置当前渲染上下文</span>
+  <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">$vnode</span> <span class="pl-c1">=</span> <span class="pl-s1">_parentVnode</span>
+  <span class="pl-k">let</span> <span class="pl-s1">vnode</span>
+  <span class="pl-k">try</span> <span class="pl-kos">{</span>
+    <span class="pl-c">// 执行渲染函数生成 VNode</span>
+    <span class="pl-s1">vnode</span> <span class="pl-c1">=</span> <span class="pl-s1">render</span><span class="pl-kos">.</span><span class="pl-en">call</span><span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">_renderProxy</span><span class="pl-kos">,</span> <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">$createElement</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span> <span class="pl-k">catch</span> <span class="pl-kos">(</span><span class="pl-s1">e</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-c">// ... 错误处理</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-c">// ... 处理 vnode</span>
+
+  <span class="pl-k">return</span> <span class="pl-s1">vnode</span>
+<span class="pl-kos">}</span></pre></div>
+<p><code class="notranslate">_update</code> 方法负责将 VNode 转换为真实 DOM：</p>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-v">Vue</span><span class="pl-kos">.</span><span class="pl-c1">prototype</span><span class="pl-kos">.</span><span class="pl-en">_update</span> <span class="pl-c1">=</span> <span class="pl-k">function</span> <span class="pl-kos">(</span><span class="pl-s1">vnode</span>: <span class="pl-v">VNode</span><span class="pl-kos">,</span> <span class="pl-s1">hydrating</span>?: <span class="pl-s1">boolean</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+  <span class="pl-k">const</span> <span class="pl-s1">vm</span>: <span class="pl-v">Component</span> <span class="pl-c1">=</span> <span class="pl-smi">this</span>
+  <span class="pl-k">const</span> <span class="pl-s1">prevEl</span> <span class="pl-c1">=</span> <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">$el</span>
+  <span class="pl-k">const</span> <span class="pl-s1">prevVnode</span> <span class="pl-c1">=</span> <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">_vnode</span>
+  <span class="pl-k">const</span> <span class="pl-s1">restoreActiveInstance</span> <span class="pl-c1">=</span> <span class="pl-en">setActiveInstance</span><span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">)</span>
+  <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">_vnode</span> <span class="pl-c1">=</span> <span class="pl-s1">vnode</span>
+  
+  <span class="pl-c">// 首次渲染</span>
+  <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-c1">!</span><span class="pl-s1">prevVnode</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-c">// 初始渲染：将 VNode 转换为真实 DOM</span>
+    <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">$el</span> <span class="pl-c1">=</span> <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-en">__patch__</span><span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">$el</span><span class="pl-kos">,</span> <span class="pl-s1">vnode</span><span class="pl-kos">,</span> <span class="pl-s1">hydrating</span><span class="pl-kos">,</span> <span class="pl-c1">false</span> <span class="pl-c">/* removeOnly */</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span> <span class="pl-k">else</span> <span class="pl-kos">{</span>
+    <span class="pl-c">// 更新：对比新旧 VNode 并更新 DOM</span>
+    <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">$el</span> <span class="pl-c1">=</span> <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-en">__patch__</span><span class="pl-kos">(</span><span class="pl-s1">prevVnode</span><span class="pl-kos">,</span> <span class="pl-s1">vnode</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+  <span class="pl-s1">restoreActiveInstance</span><span class="pl-kos">(</span><span class="pl-kos">)</span>
+  
+  <span class="pl-c">// ... 处理旧元素</span>
+<span class="pl-kos">}</span></pre></div>
+<h2>四、组件系统</h2>
+<p>Vue 的组件系统允许我们将应用拆分为可复用的组件，每个组件都有自己的作用域。</p>
+<h3>4.1 组件注册</h3>
+<p>组件注册主要通过 <code class="notranslate">Vue.component</code> 方法实现：</p>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-v">Vue</span><span class="pl-kos">.</span><span class="pl-c1">component</span> <span class="pl-c1">=</span> <span class="pl-k">function</span> <span class="pl-kos">(</span>
+  <span class="pl-s1">id</span>: <span class="pl-s1">string</span><span class="pl-kos">,</span>
+  <span class="pl-s1">definition</span>: <span class="pl-v">Function</span> <span class="pl-c1">|</span> <span class="pl-v">Object</span>
+<span class="pl-kos">)</span>: <span class="pl-v">Function</span> <span class="pl-c1">|</span> <span class="pl-v">Object</span> <span class="pl-c1">|</span> <span class="pl-k">void</span> <span class="pl-kos">{</span>
+  <span class="pl-en">if</span> <span class="pl-kos">(</span><span class="pl-c1">!</span><span class="pl-s1">definition</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-k">return</span> <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-c1">options</span><span class="pl-kos">.</span><span class="pl-c1">components</span><span class="pl-kos">[</span><span class="pl-s1">id</span><span class="pl-kos">]</span>
+  <span class="pl-kos">}</span> <span class="pl-s1">else</span> <span class="pl-kos">{</span>
+    <span class="pl-c">// ... 处理组件名</span>
+    
+    <span class="pl-c">// 如果定义是对象，将其转换为构造函数</span>
+    <span class="pl-s1">if</span> <span class="pl-kos">(</span><span class="pl-k">typeof</span> definition <span class="pl-c1">=</span><span class="pl-c1">=</span><span class="pl-c1">=</span> <span class="pl-s">'object'</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+      definition<span class="pl-kos"></span><span class="pl-kos">.</span><span class="pl-c1">name</span> <span class="pl-c1">=</span> <span class="pl-s1">definition</span><span class="pl-kos">.</span><span class="pl-c1">name</span> <span class="pl-c1">||</span> <span class="pl-s1">id</span>
+      <span class="pl-s1">definition</span> <span class="pl-c1">=</span> <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-en">extend</span><span class="pl-kos">(</span><span class="pl-s1">definition</span><span class="pl-kos">)</span>
+    <span class="pl-kos">}</span>
+    
+    <span class="pl-c">// 注册组件</span>
+    <span class="pl-s1">this</span><span class="pl-kos">.</span><span class="pl-s1">options</span><span class="pl-kos">.</span><span class="pl-s1">components</span><span class="pl-kos">[</span><span class="pl-s1">id</span><span class="pl-kos">]</span> <span class="pl-c1">=</span> <span class="pl-s1">definition</span>
+    <span class="pl-s1">return</span> <span class="pl-s1">definition</span>
+  <span class="pl-kos">}</span>
+<span class="pl-kos">}</span></pre></div>
+<p><code class="notranslate">Vue.extend</code> 方法用于创建组件构造函数：</p>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-v">Vue</span><span class="pl-kos">.</span><span class="pl-en">extend</span> <span class="pl-c1">=</span> <span class="pl-k">function</span> <span class="pl-kos">(</span><span class="pl-s1">extendOptions</span>: <span class="pl-v">Object</span><span class="pl-kos">)</span>: <span class="pl-v">Function</span> <span class="pl-kos">{</span>
+  <span class="pl-s1">extendOptions</span> <span class="pl-c1">=</span> <span class="pl-s1">extendOptions</span> <span class="pl-c1">||</span> <span class="pl-kos">{</span><span class="pl-kos">}</span>
+  <span class="pl-k">const</span> <span class="pl-v">Super</span> <span class="pl-c1">=</span> <span class="pl-smi">this</span>
+  <span class="pl-k">const</span> <span class="pl-v">SuperId</span> <span class="pl-c1">=</span> <span class="pl-v">Super</span><span class="pl-kos">.</span><span class="pl-c1">cid</span>
+  <span class="pl-k">const</span> <span class="pl-s1">cachedCtors</span> <span class="pl-c1">=</span> <span class="pl-s1">extendOptions</span><span class="pl-kos">.</span><span class="pl-c1">_Ctor</span> <span class="pl-c1">||</span> <span class="pl-kos">(</span><span class="pl-s1">extendOptions</span><span class="pl-kos">.</span><span class="pl-c1">_Ctor</span> <span class="pl-c1">=</span> <span class="pl-kos">{</span><span class="pl-kos">}</span><span class="pl-kos">)</span>
+  
+  <span class="pl-c">// 缓存构造函数，避免重复创建</span>
+  <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">cachedCtors</span><span class="pl-kos">[</span><span class="pl-v">SuperId</span><span class="pl-kos">]</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-k">return</span> <span class="pl-s1">cachedCtors</span><span class="pl-kos">[</span><span class="pl-v">SuperId</span><span class="pl-kos">]</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-k">const</span> <span class="pl-s1">name</span> <span class="pl-c1">=</span> <span class="pl-s1">extendOptions</span><span class="pl-kos">.</span><span class="pl-c1">name</span> <span class="pl-c1">||</span> <span class="pl-v">Super</span><span class="pl-kos">.</span><span class="pl-c1">options</span><span class="pl-kos">.</span><span class="pl-c1">name</span>
+  <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">process</span><span class="pl-kos">.</span><span class="pl-c1">env</span><span class="pl-kos">.</span><span class="pl-c1">NODE_ENV</span> <span class="pl-c1">!==</span> <span class="pl-s">'production'</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-s1">name</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-en">validateComponentName</span><span class="pl-kos">(</span><span class="pl-s1">name</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+
+  <span class="pl-c">// 创建组件构造函数</span>
+  <span class="pl-k">const</span> <span class="pl-v">Sub</span> <span class="pl-c1">=</span> <span class="pl-k">function</span> <span class="pl-v">VueComponent</span><span class="pl-kos">(</span><span class="pl-s1">options</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-smi">this</span><span class="pl-kos">.</span><span class="pl-en">_init</span><span class="pl-kos">(</span><span class="pl-s1">options</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+  
+  <span class="pl-c">// 继承自 Vue</span>
+  <span class="pl-v">Sub</span><span class="pl-kos">.</span><span class="pl-c1">prototype</span> <span class="pl-c1">=</span> <span class="pl-v">Object</span><span class="pl-kos">.</span><span class="pl-en">create</span><span class="pl-kos">(</span><span class="pl-v">Super</span><span class="pl-kos">.</span><span class="pl-c1">prototype</span><span class="pl-kos">)</span>
+  <span class="pl-v">Sub</span><span class="pl-kos">.</span><span class="pl-c1">prototype</span><span class="pl-kos">.</span><span class="pl-c1">constructor</span> <span class="pl-c1">=</span> <span class="pl-v">Sub</span>
+  <span class="pl-v">Sub</span><span class="pl-kos">.</span><span class="pl-c1">cid</span> <span class="pl-c1">=</span> <span class="pl-s1">cid</span><span class="pl-c1">++</span>
+  <span class="pl-c">// 合并选项</span>
+  <span class="pl-v">Sub</span><span class="pl-kos">.</span><span class="pl-c1">options</span> <span class="pl-c1">=</span> <span class="pl-en">mergeOptions</span><span class="pl-kos">(</span>
+    <span class="pl-v">Super</span><span class="pl-kos">.</span><span class="pl-c1">options</span><span class="pl-kos">,</span>
+    <span class="pl-s1">extendOptions</span>
+  <span class="pl-kos">)</span>
+  <span class="pl-v">Sub</span><span class="pl-kos">[</span><span class="pl-s">'super'</span><span class="pl-kos">]</span> <span class="pl-c1">=</span> <span class="pl-v">Super</span>
+
+  <span class="pl-c">// ... 初始化其他属性和方法</span>
+
+  <span class="pl-c">// 缓存构造函数</span>
+  <span class="pl-s1">cachedCtors</span><span class="pl-kos">[</span><span class="pl-v">SuperId</span><span class="pl-kos">]</span> <span class="pl-c1">=</span> <span class="pl-v">Sub</span>
+  <span class="pl-k">return</span> <span class="pl-v">Sub</span>
+<span class="pl-kos">}</span></pre></div>
+<h3>4.2 组件实例化</h3>
+<p>组件实例化过程在虚拟 DOM 的 patch 阶段进行，当遇到组件类型的 VNode 时，会创建对应的组件实例：</p>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-k">function</span> <span class="pl-en">createComponent</span><span class="pl-kos">(</span><span class="pl-s1">vnode</span><span class="pl-kos">,</span> <span class="pl-s1">insertedVnodeQueue</span><span class="pl-kos">,</span> <span class="pl-s1">parentElm</span><span class="pl-kos">,</span> <span class="pl-s1">refElm</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+  <span class="pl-k">let</span> <span class="pl-s1">i</span> <span class="pl-c1">=</span> <span class="pl-s1">vnode</span><span class="pl-kos">.</span><span class="pl-c1">data</span>
+  <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-en">isDef</span><span class="pl-kos">(</span><span class="pl-s1">i</span><span class="pl-kos">)</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-k">const</span> <span class="pl-s1">isReactivated</span> <span class="pl-c1">=</span> <span class="pl-en">isDef</span><span class="pl-kos">(</span><span class="pl-s1">vnode</span><span class="pl-kos">.</span><span class="pl-c1">componentInstance</span><span class="pl-kos">)</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-s1">i</span><span class="pl-kos">.</span><span class="pl-c1">keepAlive</span>
+    <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-en">isDef</span><span class="pl-kos">(</span><span class="pl-s1">i</span> <span class="pl-c1">=</span> <span class="pl-s1">i</span><span class="pl-kos">.</span><span class="pl-c1">hook</span><span class="pl-kos">)</span> <span class="pl-c1">&amp;&amp;</span> <span class="pl-en">isDef</span><span class="pl-kos">(</span><span class="pl-s1">i</span> <span class="pl-c1">=</span> <span class="pl-s1">i</span><span class="pl-kos">.</span><span class="pl-c1">init</span><span class="pl-kos">)</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+      <span class="pl-s1">i</span><span class="pl-kos">(</span><span class="pl-s1">vnode</span><span class="pl-kos">,</span> <span class="pl-c1">false</span> <span class="pl-c">/* hydrating */</span><span class="pl-kos">)</span>
+    <span class="pl-kos">}</span>
+    
+    <span class="pl-c">// 初始化后，如果有组件实例，说明是一个已激活的缓存组件</span>
+    <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-en">isDef</span><span class="pl-kos">(</span><span class="pl-s1">vnode</span><span class="pl-kos">.</span><span class="pl-c1">componentInstance</span><span class="pl-kos">)</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+      <span class="pl-en">initComponent</span><span class="pl-kos">(</span><span class="pl-s1">vnode</span><span class="pl-kos">,</span> <span class="pl-s1">insertedVnodeQueue</span><span class="pl-kos">)</span>
+      <span class="pl-en">insert</span><span class="pl-kos">(</span><span class="pl-s1">parentElm</span><span class="pl-kos">,</span> <span class="pl-s1">vnode</span><span class="pl-kos">.</span><span class="pl-c1">elm</span><span class="pl-kos">,</span> <span class="pl-s1">refElm</span><span class="pl-kos">)</span>
+      <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-en">isTrue</span><span class="pl-kos">(</span><span class="pl-s1">isReactivated</span><span class="pl-kos">)</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+        <span class="pl-en">reactivateComponent</span><span class="pl-kos">(</span><span class="pl-s1">vnode</span><span class="pl-kos">,</span> <span class="pl-s1">insertedVnodeQueue</span><span class="pl-kos">,</span> <span class="pl-s1">parentElm</span><span class="pl-kos">,</span> <span class="pl-s1">refElm</span><span class="pl-kos">)</span>
+      <span class="pl-kos">}</span>
+      <span class="pl-k">return</span> <span class="pl-c1">true</span>
+    <span class="pl-kos">}</span>
+  <span class="pl-kos">}</span>
+<span class="pl-kos">}</span></pre></div>
+<h2>五、生命周期</h2>
+<p>Vue 实例从创建到销毁的整个过程称为生命周期。</p>
+<h3>5.1 生命周期钩子的注册与调用</h3>
+<p>生命周期钩子在 <code class="notranslate">src/core/instance/lifecycle.js</code> 中定义：</p>
+<div class="highlight highlight-source-js"><pre class="notranslate"><span class="pl-k">export</span> <span class="pl-k">function</span> <span class="pl-en">callHook</span><span class="pl-kos">(</span><span class="pl-s1">vm</span>: <span class="pl-v">Component</span><span class="pl-kos">,</span> <span class="pl-s1">hook</span>: <span class="pl-s1">string</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+  <span class="pl-c">// 避免在钩子函数中出现错误时中断程序</span>
+  <span class="pl-en">pushTarget</span><span class="pl-kos">(</span><span class="pl-kos">)</span>
+  <span class="pl-k">const</span> <span class="pl-s1">handlers</span> <span class="pl-c1">=</span> <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">$options</span><span class="pl-kos">[</span><span class="pl-s1">hook</span><span class="pl-kos">]</span>
+  <span class="pl-k">const</span> <span class="pl-s1">info</span> <span class="pl-c1">=</span> <span class="pl-s">`<span class="pl-s1"><span class="pl-kos">${</span><span class="pl-s1">hook</span><span class="pl-kos">}</span></span> hook`</span>
+  <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">handlers</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-k">for</span> <span class="pl-kos">(</span><span class="pl-k">let</span> <span class="pl-s1">i</span> <span class="pl-c1">=</span> <span class="pl-c1">0</span><span class="pl-kos">,</span> <span class="pl-s1">j</span> <span class="pl-c1">=</span> <span class="pl-s1">handlers</span><span class="pl-kos">.</span><span class="pl-c1">length</span><span class="pl-kos">;</span> <span class="pl-s1">i</span> <span class="pl-c1">&lt;</span> <span class="pl-s1">j</span><span class="pl-kos">;</span> <span class="pl-s1">i</span><span class="pl-c1">++</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+      <span class="pl-en">invokeWithErrorHandling</span><span class="pl-kos">(</span><span class="pl-s1">handlers</span><span class="pl-kos">[</span><span class="pl-s1">i</span><span class="pl-kos">]</span><span class="pl-kos">,</span> <span class="pl-s1">vm</span><span class="pl-kos">,</span> <span class="pl-c1">null</span><span class="pl-kos">,</span> <span class="pl-s1">vm</span><span class="pl-kos">,</span> <span class="pl-s1">info</span><span class="pl-kos">)</span>
+    <span class="pl-kos">}</span>
+  <span class="pl-kos">}</span>
+  <span class="pl-c">// 调用全局混入的钩子</span>
+  <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-c1">_hasHookEvent</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-s1">vm</span><span class="pl-kos">.</span><span class="pl-en">$emit</span><span class="pl-kos">(</span><span class="pl-s">'hook:'</span> <span class="pl-c1">+</span> <span class="pl-s1">hook</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span>
+  <span class="pl-en">popTarget</span><span class="pl-kos">(</span><span class="pl-kos">)</span>
+<span class="pl-kos">}</span></pre></div>
+<p>Vue 实例完整的生命周期包括：</p>
+<ol>
+<li><strong>初始化阶段</strong>：<code class="notranslate">beforeCreate</code> → <code class="notranslate">created</code></li>
+<li><strong>挂载阶段</strong>：<code class="notranslate">beforeMount</code> → <code class="notranslate">mounted</code></li>
+<li><strong>更新阶段</strong>：<code class="notranslate">beforeUpdate</code> → <code class="notranslate">updated</code></li>
+<li><strong>销毁阶段</strong>：<code class="notranslate">beforeDestroy</code> → <code class="notranslate">destroyed</code></li>
+</ol>
+<h2>参考资料</h2>
+<ul>
+<li><a href="https://vuejs.org/" rel="nofollow">Vue 官方文档</a></li>
+<li><a href="https://github.com/vuejs/vue">Vue 源码仓库</a></li>
+<li><a href="https://hcysun.me/vue-design/" rel="nofollow">Vue 技术内幕</a></li>
+</ul></div>
+<div style="font-size:small;margin-top:8px;float:right;"></div>
+
+<button class="btn btn-block" type="button" onclick="openComments()" id="cmButton">评论</button>
+<div class="comments" id="comments"></div>
+
+</div>
+    <div id="footer"><div id="footer1">Copyright © <span id="copyrightYear"></span> <a href="https://199yjy.github.io/record.github.io">yjieyan的私人博客</a></div>
+<div id="footer2">
+    <span id="runday"></span><span>Powered by <a href="https://meekdai.com/Gmeek.html" target="_blank">Gmeek</a></span>
+</div>
+
+<script>
+var now=new Date();
+document.getElementById("copyrightYear").innerHTML=now.getFullYear();
+
+if(""!=""){
+    var startSite=new Date("");
+    var diff=now.getTime()-startSite.getTime();
+    var diffDay=Math.floor(diff/(1000*60*60*24));
+    document.getElementById("runday").innerHTML="网站运行"+diffDay+"天"+" • ";
+}
+</script></div>
+</body>
+<script>
+var IconList={'sun': 'M8 10.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM8 12a4 4 0 100-8 4 4 0 000 8zM8 0a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0V.75A.75.75 0 018 0zm0 13a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 018 13zM2.343 2.343a.75.75 0 011.061 0l1.06 1.061a.75.75 0 01-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zm9.193 9.193a.75.75 0 011.06 0l1.061 1.06a.75.75 0 01-1.06 1.061l-1.061-1.06a.75.75 0 010-1.061zM16 8a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0116 8zM3 8a.75.75 0 01-.75.75H.75a.75.75 0 010-1.5h1.5A.75.75 0 013 8zm10.657-5.657a.75.75 0 010 1.061l-1.061 1.06a.75.75 0 11-1.06-1.06l1.06-1.06a.75.75 0 011.06 0zm-9.193 9.193a.75.75 0 010 1.06l-1.06 1.061a.75.75 0 11-1.061-1.06l1.06-1.061a.75.75 0 011.061 0z', 'moon': 'M9.598 1.591a.75.75 0 01.785-.175 7 7 0 11-8.967 8.967.75.75 0 01.961-.96 5.5 5.5 0 007.046-7.046.75.75 0 01.175-.786zm1.616 1.945a7 7 0 01-7.678 7.678 5.5 5.5 0 107.678-7.678z', 'sync': 'M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z', 'home': 'M6.906.664a1.749 1.749 0 0 1 2.187 0l5.25 4.2c.415.332.657.835.657 1.367v7.019A1.75 1.75 0 0 1 13.25 15h-3.5a.75.75 0 0 1-.75-.75V9H7v5.25a.75.75 0 0 1-.75.75h-3.5A1.75 1.75 0 0 1 1 13.25V6.23c0-.531.242-1.034.657-1.366l5.25-4.2Zm1.25 1.171a.25.25 0 0 0-.312 0l-5.25 4.2a.25.25 0 0 0-.094.196v7.019c0 .138.112.25.25.25H5.5V8.25a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v5.25h2.75a.25.25 0 0 0 .25-.25V6.23a.25.25 0 0 0-.094-.195Z', 'github': 'M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z', 'copy': 'M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z', 'check': 'M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z'};
+var utterancesLoad=0;
+
+let themeSettings={
+    "dark": ["dark","moon","#00f0ff","dark-blue"],
+    "light": ["light","sun","#ff5000","github-light"],
+    "auto": ["auto","sync","","preferred-color-scheme"]
+};
+function changeTheme(mode, icon, color, utheme){
+    document.documentElement.setAttribute("data-color-mode",mode);
+    document.getElementById("themeSwitch").setAttribute("d",value=IconList[icon]);
+    document.getElementById("themeSwitch").parentNode.style.color=color;
+    if(utterancesLoad==1){utterancesTheme(utheme);}
+}
+function modeSwitch(){
+    let currentMode=document.documentElement.getAttribute('data-color-mode');
+    let newMode = currentMode === "light" ? "dark" : currentMode === "dark" ? "auto" : "light";
+    localStorage.setItem("meek_theme", newMode);
+    if(themeSettings[newMode]){
+        changeTheme(...themeSettings[newMode]);
+    }
+}
+function utterancesTheme(theme){
+    const message={type:'set-theme',theme: theme};
+    const iframe=document.getElementsByClassName('utterances-frame')[0];
+    iframe.contentWindow.postMessage(message,'https://utteranc.es');
+}
+if(themeSettings[theme]){changeTheme(...themeSettings[theme]);}
+console.log("\n %c Gmeek last https://github.com/Meekdai/Gmeek \n","padding:5px 0;background:#02d81d;color:#fff");
+</script>
+
+<script>
+document.getElementById("pathHome").setAttribute("d",IconList["home"]);
+document.getElementById("pathIssue").setAttribute("d",IconList["github"]);
+
+
+
+function openComments(){
+    cm=document.getElementById("comments");
+    cmButton=document.getElementById("cmButton");
+    cmButton.innerHTML="loading";
+    span=document.createElement("span");
+    span.setAttribute("class","AnimatedEllipsis");
+    cmButton.appendChild(span);
+
+    script=document.createElement("script");
+    script.setAttribute("src","https://utteranc.es/client.js");
+    script.setAttribute("repo","199yjy/record.github.io");
+    script.setAttribute("issue-term","title");
+    
+    if(localStorage.getItem("meek_theme")=="dark"){script.setAttribute("theme","dark-blue");}
+    else if(localStorage.getItem("meek_theme")=="light") {script.setAttribute("theme","github-light");}
+    else{script.setAttribute("theme","preferred-color-scheme");}
+    
+    script.setAttribute("crossorigin","anonymous");
+    script.setAttribute("async","");
+    cm.appendChild(script);
+
+    int=self.setInterval("iFrameLoading()",200);
+}
+
+function iFrameLoading(){
+    var utterances=document.getElementsByClassName('utterances');
+    if(utterances.length==1){
+        if(utterances[0].style.height!=""){
+            utterancesLoad=1;
+            int=window.clearInterval(int);
+            document.getElementById("cmButton").style.display="none";
+            console.log("utterances Load OK");
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const createClipboardHTML = (codeContent, additionalClasses = '') => `
+        <pre class="notranslate"><code class="notranslate">${codeContent}</code></pre>
+        <div class="clipboard-container position-absolute right-0 top-0 ${additionalClasses}">
+            <clipboard-copy class="ClipboardButton btn m-2 p-0" role="button" style="display: inherit;">
+                <svg height="16" width="16" class="octicon octicon-copy m-2"><path d="${IconList["copy"]}"></path></svg>
+                <svg height="16" width="16" class="octicon octicon-check color-fg-success m-2 d-none"><path d="${IconList["check"]}"></path></svg>
+            </clipboard-copy>
+            <div class="copy-feedback">Copied!</div>
+        </div>
+    `;
+
+    const handleCodeElements = (selector = '') => {
+        document.querySelectorAll(selector).forEach(codeElement => {
+            const codeContent = codeElement.innerHTML;
+            const newStructure = document.createElement('div');
+            newStructure.className = 'snippet-clipboard-content position-relative overflow-auto';
+            newStructure.innerHTML = createClipboardHTML(codeContent);
+
+            const parentElement = codeElement.parentElement;
+            if (selector.includes('highlight')) {
+                parentElement.insertBefore(newStructure, codeElement.nextSibling);
+                parentElement.removeChild(codeElement);
+            } else {
+                parentElement.parentElement.replaceChild(newStructure, parentElement);
+            }
+        });
+    };
+
+    handleCodeElements('pre.notranslate > code.notranslate');
+    handleCodeElements('div.highlight > pre.notranslate');
+
+    let currentFeedback = null;
+    document.querySelectorAll('clipboard-copy').forEach(copyButton => {
+        copyButton.addEventListener('click', () => {
+            const codeContent = copyButton.closest('.snippet-clipboard-content').innerText;
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = codeContent;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            const copyIcon = copyButton.querySelector('.octicon-copy');
+            const checkIcon = copyButton.querySelector('.octicon-check');
+            const copyFeedback = copyButton.nextElementSibling;
+
+            if (currentFeedback && currentFeedback !== copyFeedback) {currentFeedback.style.display = 'none';}
+            currentFeedback = copyFeedback;
+
+            copyIcon.classList.add('d-none');
+            checkIcon.classList.remove('d-none');
+            copyFeedback.style.display = 'block';
+            copyButton.style.borderColor = 'var(--color-success-fg)';
+
+            setTimeout(() => {
+                copyIcon.classList.remove('d-none');
+                checkIcon.classList.add('d-none');
+                copyFeedback.style.display = 'none';
+                copyButton.style.borderColor = '';
+            }, 2000);
+        });
+    });
+});
+
+</script>
+
+
+</html>
